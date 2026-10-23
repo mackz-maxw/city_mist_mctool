@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>迷雾之城 · 主持人工具</title>
+<style>
+:root{
+  --bg:#12141a; --panel:#1a1d26; --panel2:#21252f; --line:#2c313d;
+  --fg:#e6e8ee; --dim:#98a0b2; --gold:#c9a227; --gold2:#8a6f1c;
+  --buff:#4caf50; --debuf:#e05252; --blue:#4f9ddb;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);
+  font:14px/1.6 "Microsoft YaHei","PingFang SC",system-ui,sans-serif}
+header{display:flex;align-items:center;gap:16px;padding:14px 20px;
+  background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap}
+header h1{margin:0;font-size:17px;color:var(--gold);letter-spacing:2px;font-weight:600}
+#campaignName{background:var(--panel2);border:1px solid var(--line);color:var(--fg);
+  padding:5px 10px;border-radius:5px;font-size:14px;min-width:220px}
+.stat{color:var(--dim);font-size:12px}
+.stat b{color:var(--fg);font-weight:600}
+nav{display:flex;gap:2px;background:var(--panel);padding:0 20px;border-bottom:1px solid var(--line)}
+nav button{background:none;border:none;border-bottom:2px solid transparent;color:var(--dim);
+  padding:10px 18px;cursor:pointer;font-size:14px;font-family:inherit}
+nav button:hover{color:var(--fg)}
+nav button.on{color:var(--gold);border-bottom-color:var(--gold)}
+main{padding:20px;max-width:1500px;margin:0 auto}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px 16px;margin-bottom:14px}
+.card h3{margin:0 0 10px;font-size:15px;color:var(--fg);font-weight:600;
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.grid{display:grid;gap:14px}
+.g2{grid-template-columns:repeat(auto-fill,minmax(360px,1fr))}
+.g3{grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.muted{color:var(--dim);font-size:12px}
+button.btn{background:var(--panel2);border:1px solid var(--line);color:var(--fg);
+  padding:5px 11px;border-radius:5px;cursor:pointer;font-size:12.5px;font-family:inherit}
+button.btn:hover{border-color:var(--gold);color:var(--gold)}
+button.btn.gold{background:var(--gold2);border-color:var(--gold);color:#fff}
+button.btn.gold:hover{background:var(--gold)}
+button.btn.danger:hover{border-color:var(--debuf);color:var(--debuf)}
+button.mini{padding:1px 7px;font-size:12px;line-height:1.4}
+input[type=text],input[type=number],select,textarea{
+  background:var(--panel2);border:1px solid var(--line);color:var(--fg);
+  padding:5px 9px;border-radius:5px;font-size:13px;font-family:inherit}
+textarea{width:100%;resize:vertical;min-height:52px}
+label.lb{font-size:12px;color:var(--dim);display:block;margin-bottom:3px}
+
+/* 徽章 */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:11px;
+  font-size:12px;border:1px solid transparent;white-space:nowrap}
+.badge .lv{font-weight:700}
+.buff{border-color:#2f6b33;background:rgba(76,175,80,.14);color:#7cc47f}
+.debuf{border-color:#7a2b2b;background:rgba(224,82,82,.14);color:#e88}
+.tagpill{display:inline-block;padding:2px 8px;border-radius:4px;font-size:12px;
+  background:var(--panel2);border:1px solid var(--line);margin:2px 4px 2px 0}
+.tagpill.pw{border-left:3px solid var(--blue)}
+.tagpill.wk{border-left:3px solid var(--gold)}
+.tagpill.st{border-left:3px solid #7bbf6a}
+.tagpill.tm{border-left:3px solid #b47bde}
+.burned{opacity:.45;text-decoration:line-through}
+.pips{display:inline-flex;gap:3px;margin:0 5px;vertical-align:middle}
+.pip{width:9px;height:9px;border-radius:50%;border:1px solid var(--line);background:var(--panel2)}
+.pip.on{background:var(--gold);border-color:var(--gold)}
+.pip.burn{background:var(--debuf);border-color:var(--debuf)}
+ul.lst{list-style:none;margin:6px 0 0;padding:0}
+ul.lst li{padding:4px 0;border-bottom:1px dashed #262a34;display:flex;gap:8px;
+  align-items:flex-start;justify-content:space-between}
+ul.lst li:last-child{border-bottom:none}
+.li-main{flex:1;min-width:0}
+.lt{color:var(--gold);font-weight:600;font-size:12px;margin-right:5px}
+/* 玩家卡 */
+.pcard{border-left:4px solid var(--line)}
+.avt{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-weight:700;color:#fff;font-size:15px;flex:0 0 auto}
+.kv{font-size:12.5px;color:var(--dim)}
+.kv b{color:var(--fg)}
+/* 表格 */
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:7px 9px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--dim);font-weight:600;font-size:12px}
+/* 场景 */
+.scene{border-left:4px solid var(--blue)}
+.npc{border-left:3px solid #7bbf6a}
+.disc{opacity:.5}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);
+  background:var(--panel2);border:1px solid var(--gold);color:var(--gold);
+  padding:9px 18px;border-radius:6px;font-size:13px;z-index:99;opacity:0;
+  transition:opacity .25s;pointer-events:none}
+.toast.show{opacity:1}
+.chk{display:flex;align-items:center;gap:5px;font-size:12.5px;padding:2px 0;cursor:pointer}
+.legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.bar{height:4px;border-radius:2px;background:var(--line);overflow:hidden;margin-top:5px}
+.bar i{display:block;height:100%;background:var(--gold)}
+.empty{color:var(--dim);font-size:12.5px;padding:8px 0}
+</style>
+</head>
+<body>
+<header>
+  <h1>迷雾之城 · 主持人工具</h1>
+  <input type="text" id="campaignName" placeholder="案件 / 战役名称">
+  <span class="stat" id="topStat"></span>
+</header>
+<nav id="tabs">
+  <button data-tab="overview" class="on">概览</button>
+  <button data-tab="players">玩家</button>
+  <button data-tab="scenes">场景 / 模组</button>
+  <button data-tab="unlocks">解锁</button>
+  <button data-tab="rules">规则速查</button>
+  <button data-tab="data">数据 / 导入</button>
+</nav>
+<main id="app"></main>
+<div class="toast" id="toast"></div>
+
+<script src="xlsx.full.min.js"></script>
+<script src="taxonomy.js"></script>
+<script src="seed.js"></script>
+<script>
+(function(){
+"use strict";
+var KEY="misty_city_gm_v1";
+var PAL=["#e05252","#4f9ddb","#e0a052","#7bbf6a","#b47bde","#4fbdb5","#d95f8a","#8a9a5b","#c96f4a","#6a8fd9"];
+var LVNAME={1:"轻微",2:"轻度",3:"主要",4:"戏剧性",5:"OUT",6:"MC"};
+
+/* ---------- 状态 ---------- */
+var state, tab="overview";
+function clone(o){return JSON.parse(JSON.stringify(o));}
+function load(){
+  try{var s=localStorage.getItem(KEY);if(s)return JSON.parse(s);}catch(e){}
+  return clone(window.SEED);
+}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){toast("保存失败：存储空间不足");}}
+function uid(p){return (p||"x")+Math.random().toString(36).slice(2,8);}
+function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){
+  return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
+function toast(m){var t=document.getElementById("toast");
+  t.textContent=m;t.classList.add("show");clearTimeout(t._);
+  t._=setTimeout(function(){t.classList.remove("show");},2200);}
+
+/* 同类状态 → 同一颜色（按标签名哈希，稳定一致） */
+function scolor(label){
+  var h=0,s=String(label||"");
+  for(var i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))>>>0;
+  return PAL[h%PAL.length];
+}
+function slevel(lv){lv=+lv||1;return (LVNAME[lv]||("等级"+lv));}
+
+/* ---------- 数据访问 ---------- */
+function P(id){for(var i=0;i<state.players.length;i++)if(state.players[i].id===id)return state.players[i];return null;}
+function S(id){for(var i=0;i<state.scenes.length;i++)if(state.scenes[i].id===id)return state.scenes[i];return null;}
+function sceneName(id){var s=S(id);return s?s.name:"—";}
+function charName(id){var a=state.unlocks.characters;for(var i=0;i<a.length;i++)if(a[i].id===id)return a[i].name;return id;}
+function clueText(id){var a=state.unlocks.clues;for(var i=0;i<a.length;i++)if(a[i].id===id)return a[i].text;return id;}
+function normTag(t){t.level=Math.max(1,Math.min(6,parseInt(t.level,10)||1));
+  t.used=Math.max(0,parseInt(t.used,10)||0);if(t.used>t.level)t.used=t.level;return t;}
+function isBurn(t){return t.used>=t.level;}
+/* 主题集合：kind=reason|divine */
+function themes(p,kind){
+  if(kind==="reason")return p.reasonThemes;
+  if(kind==="divine")return p.divineThemes;
+  return p.extraThemes||[];
+}
+function kindLabel(kind){return kind==="reason"?"理法":(kind==="divine"?"神法":"附加");}
+function kindCls(kind){return kind==="reason"?"pw":(kind==="divine"?"st":"tm");}
+function tagList(p,kind,ti,type){var th=themes(p,kind)[ti];
+  return type==="power"?th.powerTags:th.weaknessTags;}
+
+/* ---------- 标签渲染 ---------- */
+function pips(t){
+  var h='<span class="pips">';
+  for(var i=0;i<t.level;i++){
+    var c=i<t.used?(isBurn(t)?"pip burn":"pip on"):"pip";
+    h+='<i class="'+c+'"></i>';
+  }
+  return h+'</span>';
+}
+function tagRow(t,acts,cls){
+  var burn=isBurn(t);
+  return '<li><span class="li-main"><span class="tagpill '+cls+(burn?" burned":"")+'"'+
+    (t.note?' title="问卷题：'+esc(t.note)+'"':'')+'>'+
+    (t.letter?'<span class="lt">'+esc(t.letter)+'</span>':'')+esc(t.text)+'</span>'+
+    pips(t)+'<span class="kv">'+t.used+'/'+t.level+'</span>'+
+    (burn?' <span class="badge debuf" style="padding:0 6px">燃尽</span>':'')+'</span>'+
+    '<span class="row">'+acts+'</span></li>';
+}
+/* act: tag | tmtag | sgtag | atag ; k: 位置参数串 */
+function tagActs(act,k){
+  return '<button class="btn mini" data-act="'+act+'-use" data-k="'+k+'" data-d="-1">−</button>'+
+         '<button class="btn mini" data-act="'+act+'-use" data-k="'+k+'" data-d="1">+</button>'+
+         '<button class="btn mini" data-act="'+act+'-lv" data-k="'+k+'">等级</button>'+
+         '<button class="btn mini danger" data-act="'+act+'-del" data-k="'+k+'">×</button>';
+}
+
+/* ---------- 渲染：概览 ---------- */
+function viewOverview(){
+  var h='<div class="grid g2">';
+  state.players.forEach(function(p){
+    var sc=S(p.currentSceneId);
+    var total=0,burned=0;
+    function cnt(arr){(arr||[]).forEach(function(t){total++;if(isBurn(t))burned++;});}
+    p.reasonThemes.concat(p.divineThemes,p.extraThemes||[]).forEach(function(t){cnt(t.powerTags);cnt(t.weaknessTags);});
+    cnt(p.teamTags);cnt(p.storyTags);
+    h+='<div class="card pcard" style="border-left-color:'+(p.color||"#666")+'">'+
+      '<h3><span class="avt" style="background:'+(p.color||"#666")+'">'+esc(p.name.slice(0,1))+'</span>'+
+      esc(p.name)+' <span class="muted">'+esc(p.playerName||"")+'</span>'+
+      '<span class="row" style="margin-left:auto"><button class="btn mini" data-act="goto-player" data-id="'+p.id+'">详情</button></span></h3>'+
+      '<div class="kv">📍 <b>'+esc(p.currentTime||"")+'</b> · '+esc(sceneName(p.currentSceneId))+
+      (sc?' <span class="muted">（'+esc(sc.timeState||"")+'）</span>':'')+'</div>'+
+      '<div class="kv" style="margin-top:5px">⚡ 活力 <b>'+(p.vigor||0)+'</b> &nbsp; 🔍 线索 <b>'+(p.clues||0)+'</b>'+
+      ' &nbsp; 🏷 标签 '+burned+'<span class="muted">/'+total+'</span> 燃尽</div>'+
+      '<div style="margin-top:7px">'+
+      (p.status.length?p.status.map(function(s){
+        return '<span class="badge" style="border-color:'+scolor(s.label)+';color:'+scolor(s.label)+'">'+
+          esc(s.label)+' <span class="lv">-'+(s.level)+'</span> <span class="muted">'+slevel(s.level)+'</span></span>';
+      }).join(" "):'<span class="muted">无状态</span>')+'</div>'+
+      '<div class="kv" style="margin-top:7px">🔓 人物 '+p.unlockedCharacterIds.length+' · 线索 '+p.unlockedClueIds.length+'</div>'+
+      '</div>';
+  });
+  h+='</div>';
+
+  /* 状态图例：同类同色 */
+  var seen={};
+  state.players.forEach(function(p){p.status.forEach(function(s){seen[s.label]=s.level;});});
+  state.scenes.forEach(function(s){s.npcs.forEach(function(n){n.status.forEach(function(x){seen[x.label]=x.level;});});});
+  var keys=Object.keys(seen);
+  h+='<div class="card"><h3>状态图例 <span class="muted">（同类状态同色）</span></h3>';
+  h+=keys.length?'<div class="legend">'+keys.map(function(k){
+    return '<span class="badge" style="border-color:'+scolor(k)+';color:'+scolor(k)+'">'+esc(k)+'</span>';
+  }).join("")+'</div>':'<div class="empty">暂无状态</div>';
+  h+='</div>';
+
+  /* 场景一览 */
+  h+='<div class="card"><h3>场景进度</h3><table><tr><th>场景</th><th>时间状态</th><th>NPC</th><th>线索</th><th>在此的玩家</th></tr>';
+  state.scenes.forEach(function(s){
+    var who=state.players.filter(function(p){return p.currentSceneId===s.id;}).map(function(p){return p.name;}).join("、")||"—";
+    var dc=s.clues.filter(function(c){return c.discovered;}).length;
+    h+='<tr><td>'+esc(s.name)+'</td><td>'+esc(s.timeState||"")+'</td><td>'+s.npcs.length+
+       '</td><td>'+dc+'/'+s.clues.length+'</td><td>'+esc(who)+'</td></tr>';
+  });
+  h+='</table></div>';
+  return h;
+}
+
+/* ---------- 渲染：玩家 ---------- */
+function themeBlock(p,kind,ti){
+  var th=themes(p,kind)[ti];
+  var k=kind+":"+p.id+":"+ti;
+  var h='<div class="card" style="margin-bottom:10px">'+
+    '<h3><span class="tagpill '+kindCls(kind)+'">'+kindLabel(kind)+' · '+esc(th.name||"未命名")+'</span>'+
+    (th.questionnaire?'<span class="muted">问卷：'+esc(th.questionnaire)+'</span>':'')+
+    (th.title?'<span class="muted">《'+esc(th.title)+'》</span>':'')+
+    '<span class="row" style="margin-left:auto">'+
+    '<button class="btn mini" data-act="th-edit" data-k="'+k+'">编辑</button>'+
+    '<button class="btn mini danger" data-act="th-del" data-k="'+k+'">删除主题</button></span></h3>';
+  if(th.identity)h+='<div class="kv">身份：'+esc(th.identity)+'</div>';
+  if(th.description)h+='<div class="kv" style="margin-top:3px">'+esc(th.description)+'</div>';
+  h+='<div class="muted" style="margin-top:8px">力量标签</div><ul class="lst">';
+  th.powerTags.forEach(function(t,i){h+=tagRow(t,tagActs("tag",k+":power:"+i),"pw");});
+  h+='</ul><button class="btn mini" data-act="tag-add" data-k="'+k+':power">+ 力量标签</button>';
+  h+='<div class="muted" style="margin-top:10px">弱点标签</div><ul class="lst">';
+  th.weaknessTags.forEach(function(t,i){h+=tagRow(t,tagActs("tag",k+":weakness:"+i),"wk");});
+  h+='</ul><button class="btn mini" data-act="tag-add" data-k="'+k+':weakness">+ 弱点标签</button>';
+  h+='</div>';
+  return h;
+}
+function viewPlayers(){
+  if(!state.players.length)return '<div class="card"><div class="empty">还没有玩家，请在「数据 / 导入」中导入人物卡，或点下方新增。</div></div>'+
+    '<button class="btn gold" data-act="player-add">+ 新增玩家</button>';
+  var h='<div class="row" style="margin-bottom:12px">';
+  state.players.forEach(function(p){
+    var on=(p.id===cur.pid)?" gold":"";
+    h+='<button class="btn'+on+'" data-act="pick-player" data-id="'+p.id+'">'+esc(p.name)+'</button>';
+  });
+  h+='<button class="btn" data-act="player-add">+ 新增玩家</button></div>';
+
+  var p=P(cur.pid)||state.players[0];cur.pid=p.id;
+  var sceneOpts=state.scenes.map(function(s){
+    return '<option value="'+s.id+'"'+(s.id===p.currentSceneId?" selected":"")+'>'+esc(s.name)+'</option>';}).join("");
+
+  h+='<div class="card"><h3>'+esc(p.name)+
+    '<span class="muted">（玩家：'+esc(p.playerName||"—")+'）</span>'+
+    '<span class="row" style="margin-left:auto">'+
+    '<button class="btn mini" data-act="player-edit" data-id="'+p.id+'">编辑</button>'+
+    '<button class="btn mini" data-act="montage" data-id="'+p.id+'">幕间恢复</button>'+
+    '<button class="btn mini danger" data-act="player-del" data-id="'+p.id+'">删除</button></span></h3>';
+  h+='<div class="row"><div><label class="lb">当前场景</label><select data-act="set-scene" data-id="'+p.id+'">'+
+     '<option value="">—</option>'+sceneOpts+'</select></div>'+
+     '<div><label class="lb">当前时间</label><input type="text" data-act="set-time" data-id="'+p.id+'" value="'+esc(p.currentTime||"")+'" placeholder="如 夜晚23:10"></div>'+
+     '<div><label class="lb">活力 ⚡</label><input type="number" style="width:64px" data-act="set-vigor" data-id="'+p.id+'" value="'+(p.vigor||0)+'"></div>'+
+     '<div><label class="lb">线索 🔍</label><input type="number" style="width:64px" data-act="set-clues" data-id="'+p.id+'" value="'+(p.clues||0)+'"></div></div>';
+
+  /* 状态 */
+  h+='<div style="margin-top:12px"><span class="muted">状态（同类同色）</span>'+
+     ' <button class="btn mini" data-act="st-add" data-id="'+p.id+'">+ 状态</button>'+
+     ' <span class="muted">等级：1轻微 2轻度 3主要 4戏剧性 5OUT 6MC</span></div><ul class="lst">';
+  p.status.forEach(function(s,i){
+    h+='<li><span class="li-main"><span class="badge" style="border-color:'+scolor(s.label)+';color:'+scolor(s.label)+'">'+
+      esc(s.label)+' <span class="lv">-'+(s.level)+'</span></span> <span class="kv">'+slevel(s.level)+'</span>'+
+      ' <span class="badge '+(s.kind==="buff"?"buff":"debuf")+'">'+(s.kind==="buff"?"增益":"减益")+'</span></span>'+
+      '<span class="row"><button class="btn mini" data-act="st-lv" data-id="'+p.id+'" data-i="'+i+'" data-d="-1">−</button>'+
+      '<button class="btn mini" data-act="st-lv" data-id="'+p.id+'" data-i="'+i+'" data-d="1">+</button>'+
+      '<button class="btn mini danger" data-act="st-del" data-id="'+p.id+'" data-i="'+i+'">×</button></span></li>';
+  });
+  if(!p.status.length)h+='<div class="empty">无状态</div>';
+  h+='</ul>';
+
+  /* 团队 / 故事标签 */
+  h+='<div class="row" style="margin-top:12px;gap:18px;align-items:flex-start">';
+  h+='<div style="flex:1;min-width:250px"><span class="muted">团队标签</span>'+
+     ' <button class="btn mini" data-act="tm-add" data-id="'+p.id+'">+</button><ul class="lst">';
+  p.teamTags.forEach(function(t,i){h+=tagRow(t,tagActs("tmtag",p.id+":"+i),"tm");});
+  h+='</ul></div>';
+  h+='<div style="flex:1;min-width:250px"><span class="muted">故事标签</span>'+
+     ' <button class="btn mini" data-act="sgt-add" data-id="'+p.id+'">+</button><ul class="lst">';
+  p.storyTags.forEach(function(t,i){h+=tagRow(t,tagActs("sgtag",p.id+":"+i),"st")+
+     (t.persistent?'<span class="muted">持续</span>':'<span class="muted">临时</span>');});
+  h+='</ul></div></div>';
+
+  /* 已解锁 */
+  h+='<div class="row" style="margin-top:14px;gap:18px;align-items:flex-start">';
+  h+='<div style="flex:1"><span class="muted">已解锁人物</span><div>';
+  if(!state.unlocks.characters.length)h+='<div class="empty">解锁池为空</div>';
+  state.unlocks.characters.forEach(function(c){
+    var on=p.unlockedCharacterIds.indexOf(c.id)>=0;
+    h+='<label class="chk"><input type="checkbox" data-act="ul-char" data-id="'+p.id+'" data-c="'+c.id+'"'+(on?" checked":"")+'>'+esc(c.name)+'</label>';
+  });
+  h+='</div></div><div style="flex:1"><span class="muted">已解锁线索</span><div>';
+  if(!state.unlocks.clues.length)h+='<div class="empty">解锁池为空</div>';
+  state.unlocks.clues.forEach(function(c){
+    var on=p.unlockedClueIds.indexOf(c.id)>=0;
+    h+='<label class="chk"><input type="checkbox" data-act="ul-clue" data-id="'+p.id+'" data-c="'+c.id+'"'+(on?" checked":"")+'>'+esc(c.text)+'</label>';
+  });
+  h+='</div></div></div>';
+  if(p.notes)h+='<div class="kv" style="margin-top:10px">备注：'+esc(p.notes)+'</div>';
+  h+='</div>';
+
+  /* 主题 */
+  h+='<div class="row" style="margin-bottom:10px"><span class="muted">理法主题</span>'+
+     '<button class="btn mini" data-act="th-add" data-k="reason:'+p.id+'">+ 理法主题</button>'+
+     '<span class="muted" style="margin-left:14px">神法主题</span>'+
+     '<button class="btn mini" data-act="th-add" data-k="divine:'+p.id+'">+ 神法主题</button>'+
+     '<span class="muted" style="margin-left:14px">附加主题</span>'+
+     '<button class="btn mini" data-act="th-add" data-k="extra:'+p.id+'">+ 附加主题</button></div>';
+  p.reasonThemes.forEach(function(t,i){h+=themeBlock(p,"reason",i);});
+  p.divineThemes.forEach(function(t,i){h+=themeBlock(p,"divine",i);});
+  (p.extraThemes||[]).forEach(function(t,i){h+=themeBlock(p,"extra",i);});
+  return h;
+}
+
+/* ---------- 渲染：场景 ---------- */
+function viewScenes(){
+  var h='<div class="row" style="margin-bottom:12px"><button class="btn gold" data-act="scene-add">+ 新增场景</button></div>';
+  if(!state.scenes.length)return h+'<div class="empty">还没有场景</div>';
+  state.scenes.forEach(function(sc){
+    h+='<div class="card scene"><h3>'+esc(sc.name)+
+      '<span class="muted">时间：'+esc(sc.timeState||"—")+'</span>'+
+      '<span class="row" style="margin-left:auto">'+
+      '<button class="btn mini" data-act="scene-edit" data-id="'+sc.id+'">编辑</button>'+
+      '<button class="btn mini danger" data-act="scene-del" data-id="'+sc.id+'">删除</button></span></h3>';
+    if(sc.description)h+='<div class="kv">'+esc(sc.description)+'</div>';
+
+    /* NPC */
+    h+='<div style="margin-top:10px"><span class="muted">NPC</span>'+
+       ' <button class="btn mini" data-act="npc-add" data-id="'+sc.id+'">+ NPC</button></div>';
+    sc.npcs.forEach(function(n,ni){
+      h+='<div class="card npc" style="margin:8px 0;padding:10px 12px">'+
+        '<h3 style="font-size:14px">'+esc(n.name)+
+        '<span class="row" style="margin-left:auto">'+
+        '<button class="btn mini" data-act="npc-edit" data-k="'+sc.id+':'+ni+'">编辑</button>'+
+        '<button class="btn mini danger" data-act="npc-del" data-k="'+sc.id+':'+ni+'">删除</button></span></h3>';
+      if(n.description)h+='<div class="kv">'+esc(n.description)+'</div>';
+      h+='<div class="muted" style="margin-top:6px">能力标签</div><ul class="lst">';
+      n.abilityTags.forEach(function(t,i){
+        h+=tagRow(t,tagActs("atag",sc.id+":"+ni+":"+i),"pw");});
+      h+='</ul><button class="btn mini" data-act="atag-add" data-k="'+sc.id+':'+ni+'">+ 能力标签</button>';
+      h+='<div class="muted" style="margin-top:8px">状态</div><div>';
+      n.status.forEach(function(s,i){
+        h+='<span class="badge" style="border-color:'+scolor(s.label)+';color:'+scolor(s.label)+'">'+esc(s.label)+
+           ' <span class="lv">-'+(s.level)+'</span></span> '+
+           '<button class="btn mini" data-act="npcst-lv" data-k="'+sc.id+':'+ni+'" data-i="'+i+'" data-d="-1">−</button>'+
+           '<button class="btn mini" data-act="npcst-lv" data-k="'+sc.id+':'+ni+'" data-i="'+i+'" data-d="1">+</button>'+
+           '<button class="btn mini danger" data-act="npcst-del" data-k="'+sc.id+':'+ni+'" data-i="'+i+'">×</button> ';
+      });
+      if(!n.status.length)h+='<span class="muted">无</span>';
+      h+=' <button class="btn mini" data-act="npcst-add" data-k="'+sc.id+':'+ni+'">+ 状态</button></div>';
+      if(n.notes)h+='<div class="kv" style="margin-top:6px">备注：'+esc(n.notes)+'</div>';
+      h+='</div>';
+    });
+
+    /* 线索 */
+    h+='<div style="margin-top:10px"><span class="muted">当前场景线索</span>'+
+       ' <button class="btn mini" data-act="clue-add" data-id="'+sc.id+'">+ 线索</button></div><ul class="lst">';
+    sc.clues.forEach(function(c,i){
+      h+='<li><span class="li-main '+(c.discovered?"":"disc")+'">'+(c.discovered?"✔ ":"○ ")+esc(c.text)+'</span>'+
+        '<span class="row"><button class="btn mini" data-act="clue-tog" data-k="'+sc.id+':'+i+'">'+(c.discovered?"标记未发现":"标记已发现")+'</button>'+
+        '<button class="btn mini danger" data-act="clue-del" data-k="'+sc.id+':'+i+'">×</button></span></li>';
+    });
+    if(!sc.clues.length)h+='<div class="empty">无线索</div>';
+    h+='</ul>';
+    if(sc.notes)h+='<div class="kv">主持人备注：'+esc(sc.notes)+'</div>';
+    h+='</div>';
+  });
+  return h;
+}
+
+/* ---------- 渲染：解锁 ---------- */
+function viewUnlocks(){
+  var h='<div class="grid g2">';
+  h+='<div class="card"><h3>人物（解锁池）'+
+     '<button class="btn mini" data-act="uchar-add" style="margin-left:auto">+ 人物</button></h3><ul class="lst">';
+  state.unlocks.characters.forEach(function(c,i){
+    h+='<li><span class="li-main"><b>'+esc(c.name)+'</b>'+(c.desc?' <span class="muted">'+esc(c.desc)+'</span>':'')+'</span>'+
+      '<span class="row"><button class="btn mini" data-act="uchar-edit" data-i="'+i+'">编辑</button>'+
+      '<button class="btn mini danger" data-act="uchar-del" data-i="'+i+'">×</button></span></li>';
+  });
+  if(!state.unlocks.characters.length)h+='<div class="empty">暂无</div>';
+  h+='</ul></div>';
+
+  h+='<div class="card"><h3>线索（解锁池）'+
+     '<button class="btn mini" data-act="uclue-add" style="margin-left:auto">+ 线索</button></h3><ul class="lst">';
+  state.unlocks.clues.forEach(function(c,i){
+    h+='<li><span class="li-main">'+esc(c.text)+'</span>'+
+      '<span class="row"><button class="btn mini" data-act="uclue-edit" data-i="'+i+'">编辑</button>'+
+      '<button class="btn mini danger" data-act="uclue-del" data-i="'+i+'">×</button></span></li>';
+  });
+  if(!state.unlocks.clues.length)h+='<div class="empty">暂无</div>';
+  h+='</ul></div></div>';
+
+  /* 谁解锁了什么 */
+  h+='<div class="card"><h3>解锁分布</h3><table><tr><th>玩家</th><th>已解锁人物</th><th>已解锁线索</th></tr>';
+  state.players.forEach(function(p){
+    h+='<tr><td>'+esc(p.name)+'</td><td>'+
+      (p.unlockedCharacterIds.map(charName).map(esc).join("、")||"—")+'</td><td>'+
+      (p.unlockedClueIds.map(clueText).map(esc).join("；")||"—")+'</td></tr>';
+  });
+  h+='</table></div>';
+  return h;
+}
+
+/* ---------- 渲染：规则速查 ---------- */
+function viewRules(){
+  var h='';
+  h+='<div class="card"><h3>状态等级</h3><table><tr><th>等级</th><th>名称</th><th>含义</th></tr>'+
+    '<tr><td>1-4</td><td>轻微 / 轻度 / 主要 / 戏剧性</td><td>由轻到重</td></tr>'+
+    '<tr><td>5</td><td>OUT</td><td>无法尝试受其影响的任何行动</td></tr>'+
+    '<tr><td>6</td><td>MC</td><td>可能死亡、昏迷、永久增减标签或主题，由 MC 决定</td></tr></table>'+
+    '<div class="muted" style="margin-top:8px">状态 = 标签 + 等级；等级变化时应同步改写标签以匹配等级（如 羞愧-2 + 羞愧-2 → 屈辱-3）。</div></div>';
+
+  h+='<div class="card"><h3>状态叠加</h3><ul class="lst">'+
+    '<li><span class="li-main">新状态等级 <b>更高</b> → 取代原状态（昏昏欲睡-3 取代 疲惫-1）</span></li>'+
+    '<li><span class="li-main">新状态等级 <b>相同</b> → 原状态提升 1 级（羞愧-2 → 屈辱-3）</span></li>'+
+    '<li><span class="li-main">新状态等级 <b>更低</b> → 逐次累计，满后提升 1 级</span></li>'+
+    '</ul></div>';
+
+  h+='<div class="card"><h3>活力 ⚡ 与标签</h3><div class="kv">改变局势成功 → 获得活力 = 效力（10+ 至少 2 点）。1 点活力可换：</div><ul class="lst">'+
+    '<li><span class="li-main">创造一个故事标签</span></li>'+
+    '<li><span class="li-main">燃尽一个力量标签或故事标签</span></li>'+
+    '<li><span class="li-main">赋予 / 降低一个状态（每点 1 级）</span></li></ul>'+
+    '<div class="kv" style="margin-top:8px">标签使用次数上限 = 标签等级；用满即「燃尽」，需蒙太奇（幕间）动作恢复。'+
+    '也可主动燃尽标签换取固定结果：效力 3、骰出 7，状态仍可修正。</div></div>';
+
+  h+='<div class="card"><h3>效力计算</h3><div class="kv">'+
+    '每个直接相助的<b>力量标签</b> +1；每个直接阻碍的<b>弱点标签</b> −1（可标记一次焦点）；'+
+    '加上最高<b>增益状态</b>级数，减去最高<b>减益状态</b>级数。掷 2d6 + 效力：10+ 大成功，7-9 成功带代价，6 及以下失败。'+
+    '</div><div class="row" style="margin-top:10px">'+
+    '<button class="btn gold" data-act="calc-open">打开效力计算器</button></div>'+
+    '<div id="calcBox" style="margin-top:12px"></div></div>';
+
+  h+='<div class="card"><h3>核心动作</h3><table><tr><th>动作</th><th>用途</th><th>成功效果要点</th></tr>'+
+    [['改变局势','给自己/同伴优势','获得活力 = 效力'],
+     ['说服','劝说、威胁、引诱','施加等级=效力的状态，目标可选择让步'],
+     ['直面危险','抵挡打击、忍受伤害、抵抗影响','10+ 免除；7-9 状态等级-1'],
+     ['针锋相对','争夺控制权','7-9 选 1 项 / 10+ 选 2 项'],
+     ['全力一击','无阻拦时全力攻击','施加等级=效力的状态'],
+     ['调查','寻找答案、获取信息','获得线索 = 效力，1 线索换 1 个问题'],
+     ['隐秘行事','小心或误导地行事','——'],
+     ['承担风险','勇敢冒险的壮举','——']].map(function(r){
+      return '<tr><td><b>'+r[0]+'</b></td><td>'+r[1]+'</td><td>'+r[2]+'</td></tr>';}).join("")+'</table></div>';
+
+  h+='<div class="card"><h3>主题与焦点</h3><div class="kv">'+
+    '理法主题含<b>身份</b>陈述与 3 格<b>裂痕</b>：违背身份即标记 1 格裂痕；裂痕满 3 格 → 该理法主题替换为新的神法主题。'+
+    '激活弱点标签可标记 1 次对应主题的<b>焦点</b>。神法与理法需保持平衡，极端会导致超限解放或成为化身。</div></div>';
+  return h;
+}
+
+/* ---------- 效力计算器 ---------- */
+function renderCalc(pid){
+  var box=document.getElementById("calcBox");if(!box)return;
+  var p=P(pid);if(!p){box.innerHTML="";return;}
+  var h='<div class="card" style="background:var(--panel2)"><h3>效力计算 · '+esc(p.name)+'</h3>';
+  function group(title,arr,sign,kind,ti){
+    var s='<div class="muted" style="margin-top:6px">'+title+'（'+sign+'1）</div>';
+    arr.forEach(function(t,i){
+      if(isBurn(t))return;
+      s+='<label class="chk"><input type="checkbox" class="calcTag" data-sign="'+sign+'" data-lv="'+t.level+'">'+
+         esc(t.text)+' <span class="muted">Lv'+t.level+'</span></label>';
+    });
+    return s;
+  }
+  h+='<div class="row" style="align-items:flex-start;gap:20px"><div style="flex:1">';
+  p.reasonThemes.concat(p.divineThemes).forEach(function(th){
+    h+=group("力量标签（主题："+esc(th.name)+"）",th.powerTags,"+");
+    h+=group("弱点标签（主题："+esc(th.name)+"）",th.weaknessTags,"-");
+  });
+  h+=group("团队标签",p.teamTags,"+");
+  h+=group("故事标签",p.storyTags,"+");
+  h+='</div><div style="flex:0 0 200px">'+
+     '<label class="lb">增益状态修正（+）</label><input type="number" id="calcBuff" value="0" style="width:70px">'+
+     '<label class="lb" style="margin-top:8px">减益状态修正（−）</label><input type="number" id="calcDeb" value="0" style="width:70px">'+
+     '<div style="margin-top:10px"><button class="btn gold" id="calcRoll">掷 2d6 计算</button></div>'+
+     '<div id="calcOut" style="margin-top:10px"></div></div></div></div>';
+  box.innerHTML=h;
+  document.getElementById("calcRoll").onclick=function(){
+    var eff=0,ch=box.querySelectorAll(".calcTag");
+    for(var i=0;i<ch.length;i++)if(ch[i].checked)eff+=(ch[i].getAttribute("data-sign")==="+"?1:-1);
+    eff+=parseInt(document.getElementById("calcBuff").value,10)||0;
+    eff-=parseInt(document.getElementById("calcDeb").value,10)||0;
+    var d1=1+Math.floor(Math.random()*6),d2=1+Math.floor(Math.random()*6),tot=d1+d2+eff;
+    var res=tot>=10?"<b style='color:#7cc47f'>10+ 大成功</b>":(tot>=7?"<b style='color:var(--gold)'>7-9 成功（带代价）</b>":
+      "<b style='color:#e88'>6 及以下 失败</b>");
+    document.getElementById("calcOut").innerHTML=
+      "效力 <b>"+eff+"</b> ＋ 骰 "+d1+"+"+d2+" = <b>"+(d1+d2+eff)+"</b><br>"+res;
+  };
+}
+
+/* ---------- 渲染：数据/导入 ---------- */
+function viewData(){
+  var h='<div class="grid g2">';
+  h+='<div class="card"><h3>导入人物卡（xlsx）</h3>'+
+    '<div class="kv">支持《迷雾之城》自动卡 1.6 模板（一卡一角色）。读取：角色名称、玩家、理法/神法主题名与问卷名、各力量/弱点标签、团队标签、状态。</div>'+
+    '<div class="row" style="margin-top:10px"><input type="file" id="cardFile" accept=".xlsx,.xls">'+
+    '<button class="btn gold" data-act="do-import">导入该人物卡</button></div>'+
+    '<div class="muted" style="margin-top:8px">仓库内附示例：<code>gm_tool/示例人物卡_炎.xlsx</code>（可直接导入测试）。'+
+    '若你手上有玩家填好的自动卡 1.6，直接选那个文件即可。</div>'+
+    '<div class="muted">读取位置（自动卡 1.6，已按合并区取锚点值）：'+
+    '角色名 <b>B2</b>、玩家名 <b>E2</b>（A2/D2 只是「姓名/玩家」表头）。'+
+    '主题块共 6 个，起始列 O / X / AG / AP / AY / BH（每块宽 9 列），各字段在「起始列 +2」：'+
+    '第2行类型、第3行主题名(问卷名)、第4行标题、第5行身份/谜题、第6行描述。'+
+    '力量标签是「问题行 + 答案行」成对：(10,11)…(18,19)，<b>只取答案行</b>的 +1 列，问题存为悬浮提示；'+
+    '弱点标签成对 (23,24)(25,26)，同样取答案行 +1 列。'+
+    '按类型自动归类为理法 / 神法 / 附加主题，「团队主题」的力量标签并入团队标签。</div></div>';
+
+  h+='<div class="card"><h3>存档</h3>'+
+    '<div class="kv">所有改动自动存入浏览器本地；建议定期导出备份。</div>'+
+    '<div class="row" style="margin-top:10px">'+
+    '<button class="btn" data-act="export">导出 JSON 存档</button>'+
+    '<input type="file" id="jsonFile" accept=".json">'+
+    '<button class="btn" data-act="do-import-json">导入 JSON</button></div>'+
+    '<div class="row" style="margin-top:10px">'+
+    '<button class="btn" data-act="load-seed">载入示例数据</button>'+
+    '<button class="btn danger" data-act="clear-all">清空全部</button></div></div>';
+  h+='</div>';
+
+  /* 标签总表 */
+  var T=window.TAXONOMY||{reasonThemes:[],divineThemes:[]};
+  h+='<div class="card"><h3>主题 / 标签总表（来自人物卡「数据」表）</h3>'+
+    '<div class="muted" style="margin-bottom:6px">下表是各主题的<b>问卷题目</b>，供创角提问与出题参考，'+
+    '<b>不是</b>角色已填写的标签；角色实际标签请看「玩家」页。</div>';
+  function tbl(list,title){
+    var s='<div class="muted" style="margin:10px 0 4px">'+title+'</div><table><tr><th>主题</th><th>力量标签（A–J）</th><th>弱点标签（A–D）</th></tr>';
+    list.forEach(function(t){
+      s+='<tr><td><b>'+esc(t.name)+'</b></td><td class="muted">'+t.powerTags.map(function(x){return x.letter+"."+esc(x.question);}).join("<br>")+
+        '</td><td class="muted">'+t.weaknessTags.map(function(x){return x.letter+"."+esc(x.question);}).join("<br>")+'</td></tr>';
+    });
+    return s+'</table>';
+  }
+  h+=tbl(T.reasonThemes,"理法主题")+tbl(T.divineThemes,"神法主题")+'</div>';
+  return h;
+}
+
+/* ---------- 主渲染 ---------- */
+var cur={pid:null};
+function render(){
+  document.getElementById("campaignName").value=state.campaign||"";
+  var burn=0,tot=0;
+  state.players.forEach(function(p){
+    function c(a){(a||[]).forEach(function(t){tot++;if(isBurn(t))burn++;});}
+    p.reasonThemes.concat(p.divineThemes,p.extraThemes||[]).forEach(function(t){c(t.powerTags);c(t.weaknessTags);});
+    c(p.teamTags);c(p.storyTags);
+  });
+  document.getElementById("topStat").innerHTML=
+    "玩家 <b>"+state.players.length+"</b> · 场景 <b>"+state.scenes.length+"</b> · 标签 <b>"+burn+"/"+tot+"</b> 燃尽";
+  var app=document.getElementById("app");
+  if(tab==="overview")app.innerHTML=viewOverview();
+  else if(tab==="players")app.innerHTML=viewPlayers();
+  else if(tab==="scenes")app.innerHTML=viewScenes();
+  else if(tab==="unlocks")app.innerHTML=viewUnlocks();
+  else if(tab==="rules"){app.innerHTML=viewRules();renderCalc(cur.pid||(state.players[0]&&state.players[0].id));}
+  else app.innerHTML=viewData();
+  app._tab=tab;
+}
+
+/* ---------- 导入 xlsx ---------- */
+function mergeMap(ws){
+  var m={};
+  (ws["!merges"]||[]).forEach(function(r){
+    var k=r.s.r+","+r.s.c;
+    for(var rr=r.s.r;rr<=r.e.r;rr++)for(var cc=r.s.c;cc<=r.e.c;cc++)m[rr+","+cc]=k;
+  });
+  return m;
+}
+function cv(ws,map,r,c){ // r,c 为 1 起
+  var key=(r-1)+","+(c-1), a=map[key]||key, p=a.split(",");
+  var cell=ws[XLSX.utils.encode_cell({r:+p[0],c:+p[1]})];
+  return cell&&cell.v!==undefined?String(cell.v).trim():"";
+}
+function importCard(file){
+  var fr=new FileReader();
+  fr.onload=function(e){
+    try{
+      var wb=XLSX.read(new Uint8Array(e.target.result),{type:"array"});
+      var ws=wb.Sheets["角色卡"]||wb.Sheets[wb.SheetNames[0]];
+      if(!ws){toast("未找到「角色卡」工作表");return;}
+      var map=mergeMap(ws),G=function(r,c){return cv(ws,map,r,c);};
+      /* 单元格若只是表头标签（如「姓名」）则视为空 */
+      function V(r,c,labels){
+        var v=G(r,c); if(!v)return "";
+        for(var i=0;i<(labels||[]).length;i++)if(v===labels[i])return "";
+        return v;
+      }
+      /* 角色名在标签右侧一格：姓名=B2 / 玩家=E2 */
+      var name=V(2,2,["姓名"])||V(2,1,["姓名"]);
+      var pn=V(2,5,["玩家"])||V(2,4,["玩家"]);
+
+      /* 收集区域内去重文本（合并区会重复出现同一值） */
+      function area(r1,r2,c1,c2,ex){
+        var out=[];
+        for(var r=r1;r<=r2;r++)for(var c=c1;c<=c2;c++){
+          var v=G(r,c); if(!v)continue;
+          var skip=false; for(var i=0;i<ex.length;i++)if(v===ex[i])skip=true;
+          if(!skip&&out.indexOf(v)<0)out.push(v);
+        }
+        return out;
+      }
+
+      /* 主题块：6 个，起始列间隔 9（O/X/AG/AP/AY/BH）
+         力量标签 = 5 对「问题行 + 答案行」(10,11)(12,13)...(18,19)
+         弱点标签 = 2 对 (23,24)(25,26) —— 只取答案行，问题存为 tooltip */
+      var BLOCKS=[15,24,33,42,51,60];
+      var reason=[],divine=[],extra=[],teamTags=[];
+      BLOCKS.forEach(function(c0){
+        var type=G(2,c0+2);            // 理法主题 / 神法主题 / 团队主题 / 附加主题
+        var qn=G(3,c0+2);              // 主题名（即问卷名）
+        var th={name:qn,questionnaire:qn?qn+"问卷":"",title:G(4,c0+2),
+                identity:G(5,c0+2),description:G(6,c0+2),powerTags:[],weaknessTags:[]};
+        for(var i=0;i<5;i++){
+          var qr=10+2*i, ar=11+2*i;
+          var letter=G(qr,c0)||G(ar,c0);
+          var ans=G(ar,c0+1);
+          if(ans)th.powerTags.push({letter:letter,text:ans,level:1,used:0,note:G(qr,c0+1)});
+        }
+        for(var j=0;j<2;j++){
+          var qr2=23+2*j, ar2=24+2*j;
+          var letter2=G(qr2,c0)||G(ar2,c0);
+          var ans2=G(ar2,c0+1);
+          if(ans2)th.weaknessTags.push({letter:letter2,text:ans2,level:1,used:0,note:G(qr2,c0+1)});
+        }
+        /* 空块判定：模板部分块位自带默认主题名，故以「标题/身份/描述/标签」是否有内容为准 */
+        if(!th.title&&!th.identity&&!th.description&&
+           !th.powerTags.length&&!th.weaknessTags.length)return;
+        if(type.indexOf("团队")>=0){
+          th.powerTags.forEach(function(t){teamTags.push({text:t.text,level:1,used:0});});
+        }else if(type.indexOf("附加")>=0){extra.push(th);}
+        else if(type.indexOf("神法")>=0){divine.push(th);}
+        else {reason.push(th);}
+      });
+
+      var storyTags=area(6,10,1,7,["故事标签"]).map(function(t){
+        return {text:t,level:1,used:0,persistent:false};});
+      var status=[];
+      area(11,15,1,7,["状态"]).join("|").split(/[|｜]/).forEach(function(seg){
+        var m=seg.match(/^\s*(.+?)\s*[-–—]?\s*(\d)\s*$/);
+        if(m)status.push({label:m[1],level:+m[2],kind:"debuff"});
+      });
+
+      if(!name&&!reason.length&&!divine.length&&!extra.length){
+        toast("该表似乎是空白模板，未读到角色内容");return;
+      }
+      var p={id:uid("p"),name:name||"未命名",playerName:pn||"",
+        color:PAL[state.players.length%PAL.length],vigor:0,clues:0,
+        currentSceneId:(state.scenes[0]&&state.scenes[0].id)||"",
+        currentTime:"",
+        reasonThemes:reason,divineThemes:divine,extraThemes:extra,
+        teamTags:teamTags,storyTags:storyTags,
+        status:status,unlockedCharacterIds:[],unlockedClueIds:[],notes:""};
+      state.players.push(p);cur.pid=p.id;save();tab="players";render();
+      toast("已导入 "+p.name+"：理法"+reason.length+" / 神法"+divine.length+
+            (extra.length?" / 附加"+extra.length:"")+" / 团队标签"+teamTags.length);
+    }catch(err){toast("导入失败："+err.message);}
+  };
+  fr.readAsArrayBuffer(file);
+}
+
+/* ---------- 事件 ---------- */
+document.getElementById("tabs").addEventListener("click",function(e){
+  var b=e.target.closest("button[data-tab]");if(!b)return;
+  tab=b.getAttribute("data-tab");
+  var bs=this.querySelectorAll("button");
+  for(var i=0;i<bs.length;i++)bs[i].classList.toggle("on",bs[i]===b);
+  render();
+});
+document.getElementById("campaignName").addEventListener("change",function(){
+  state.campaign=this.value;save();toast("案件名已保存");
+});
+
+function parseK(k){var a=k.split(":");
+  return {kind:a[0],pid:a[1],ti:+a[2]};}
+/* 按钮未带 data-id 时，从 data-k 反查所属玩家：
+   tag-* / th-* → kind:pid:...   tmtag-* / sgtag-* → pid:idx */
+function pidFrom(act,k){
+  if(!k)return null;
+  var a=k.split(":");
+  if(/^(tmtag|sgtag)/.test(act))return a[0];
+  if(/^(tag|th)/.test(act))return a[1];
+  return null;
+}
+
+document.getElementById("app").addEventListener("click",function(e){
+  var b=e.target.closest("[data-act]");if(!b)return;
+  var act=b.getAttribute("data-act"),id=b.getAttribute("data-id"),
+      k=b.getAttribute("data-k"),i=+b.getAttribute("data-i"),
+      d=+b.getAttribute("data-d");
+  var p=id?P(id):(pidFrom(act,k)?P(pidFrom(act,k)):null);
+
+  /* 玩家 */
+  if(act==="pick-player"){cur.pid=id;render();}
+  else if(act==="goto-player"){cur.pid=id;tab="players";syncTabs();render();}
+  else if(act==="player-add"){
+    var n=prompt("角色名称：","");if(n===null)return;
+    var pl=prompt("玩家名：","");
+    var np={id:uid("p"),name:n||"未命名",playerName:pl||"",color:PAL[state.players.length%PAL.length],
+      vigor:0,clues:0,currentSceneId:(state.scenes[0]&&state.scenes[0].id)||"",currentTime:"",
+      reasonThemes:[],divineThemes:[],teamTags:[],storyTags:[],status:[],
+      unlockedCharacterIds:[],unlockedClueIds:[],notes:""};
+    state.players.push(np);cur.pid=np.id;save();render();}
+  else if(act==="player-edit"){
+    p.name=prompt("角色名称：",p.name)||p.name;
+    p.playerName=prompt("玩家名：",p.playerName||"")||"";
+    p.notes=prompt("备注：",p.notes||"")||"";save();render();}
+  else if(act==="player-del"){
+    if(!confirm("删除角色 "+p.name+"？"))return;
+    state.players=state.players.filter(function(x){return x.id!==id;});save();render();}
+
+  /* 玩家字段 */
+  else if(act==="set-vigor"){p.vigor=Math.max(0,parseInt(b.value,10)||0);save();}
+  else if(act==="set-clues"){p.clues=Math.max(0,parseInt(b.value,10)||0);save();}
+  else if(act==="set-time"){p.currentTime=b.value;save();}
+  else if(act==="set-scene"){p.currentSceneId=b.value;save();render();}
+
+  /* 幕间恢复 */
+  else if(act==="montage"){
+    if(!confirm("幕间恢复：清除所有标签的燃尽计数，并删除「临时」故事标签？"))return;
+    p.reasonThemes.concat(p.divineThemes).forEach(function(t){
+      t.powerTags.concat(t.weaknessTags).forEach(function(x){x.used=0;});});
+    p.teamTags.forEach(function(x){x.used=0;});
+    p.storyTags=p.storyTags.filter(function(x){return x.persistent;});
+    p.storyTags.forEach(function(x){x.used=0;});
+    save();render();toast("已完成幕间恢复");}
+
+  /* 主题 */
+  else if(act==="th-add"){
+    var kk=parseK(k);var T=window.TAXONOMY||{reasonThemes:[],divineThemes:[]};
+    var list=kk.kind==="reason"?T.reasonThemes:(kk.kind==="divine"?T.divineThemes:[]);
+    var opts=list.map(function(t,i){return i+1+". "+t.name;}).join("\n");
+    var v=prompt(list.length?("选择主题（输入序号），或留空手动输入名称：\n"+opts):"输入主题名称：","");
+    var th;
+    if(v!==null&&v.trim()!==""){
+      var idx=parseInt(v,10)-1;
+      if(list[idx]){var src=list[idx];
+        th={name:src.name,questionnaire:src.name+"问卷",title:"",identity:"",description:"",
+            powerTags:[],weaknessTags:[]};}
+      else th={name:v.trim(),questionnaire:"",title:"",identity:"",description:"",powerTags:[],weaknessTags:[]};
+    } else {var nm=prompt("主题名称：","");if(!nm)return;
+      th={name:nm,questionnaire:"",title:"",identity:"",description:"",powerTags:[],weaknessTags:[]};}
+    themes(p,kk.kind).push(th);save();render();}
+  else if(act==="th-edit"){
+    var kk2=parseK(k);var th2=themes(p,kk2.kind)[kk2.ti];
+    th2.name=prompt("主题名称：",th2.name||"")||th2.name;
+    th2.questionnaire=prompt("问卷名：",th2.questionnaire||"")||"";
+    th2.title=prompt("标题：",th2.title||"")||"";
+    th2.identity=prompt("身份陈述：",th2.identity||"")||"";
+    th2.description=prompt("描述：",th2.description||"")||"";
+    save();render();}
+  else if(act==="th-del"){
+    var kk3=parseK(k);
+    if(!confirm("删除该主题及其全部标签？"))return;
+    themes(p,kk3.kind).splice(kk3.ti,1);save();render();}
+
+  /* 主题内标签 */
+  else if(act==="tag-add"||act==="atag-add"){
+    var txt=prompt("标签内容：","");if(!txt)return;
+    var lv=parseInt(prompt("标签等级（1-6，决定可用次数上限）：","1"),10)||1;
+    var lt=prompt("标签序号字母（可留空）：","")||"";
+    if(act==="tag-add"){
+      var a=k.split(":");var kk4={kind:a[0],pid:a[1],ti:+a[2]},type=a[3];
+      tagList(p,kk4.kind,kk4.ti,type).push({letter:lt,text:txt,level:lv,used:0});}
+    else{var b2=k.split(":");var sc2=S(b2[0]),n2=sc2.npcs[+b2[1]];
+      n2.abilityTags.push({letter:lt,text:txt,level:lv,used:0});}
+    save();render();}
+  else if(act==="tag-use"||act==="tmtag-use"||act==="sgtag-use"||act==="atag-use"){
+    var parts=k.split(":"),t;
+    if(act==="tag-use"){var kk5={kind:parts[0],pid:parts[1],ti:+parts[2]};
+      t=tagList(p,kk5.kind,kk5.ti,parts[3])[+parts[4]];}
+    else if(act==="tmtag-use")t=p.teamTags[+parts[1]];
+    else if(act==="sgtag-use")t=p.storyTags[+parts[1]];
+    else{var sc3=S(parts[0]);t=sc3.npcs[+parts[1]].abilityTags[+parts[2]];}
+    t.used=Math.max(0,Math.min(t.level,t.used+d));save();render();}
+  else if(/^(tag|tmtag|sgtag|atag)-lv$/.test(act)){
+    var parts2=k.split(":"),t2;
+    if(act==="tag-lv"){var kk6={kind:parts2[0],pid:parts2[1],ti:+parts2[2]};
+      t2=tagList(p,kk6.kind,kk6.ti,parts2[3])[+parts2[4]];}
+    else if(act==="tmtag-lv")t2=p.teamTags[+parts2[1]];
+    else if(act==="sgtag-lv")t2=p.storyTags[+parts2[1]];
+    else{var sc4=S(parts2[0]);t2=sc4.npcs[+parts2[1]].abilityTags[+parts2[2]];}
+    var nl=parseInt(prompt("标签等级（1-6，同时是可用次数上限）：",t2.level),10);
+    if(nl){t2.level=Math.max(1,Math.min(6,nl));if(t2.used>t2.level)t2.used=t2.level;}
+    save();render();}
+  else if(/^(tag|tmtag|sgtag|atag)-del$/.test(act)){
+    var parts3=k.split(":");
+    if(act==="tag-del"){var kk7={kind:parts3[0],pid:parts3[1],ti:+parts3[2]};
+      tagList(p,kk7.kind,kk7.ti,parts3[3]).splice(+parts3[4],1);}
+    else if(act==="tmtag-del")p.teamTags.splice(+parts3[1],1);
+    else if(act==="sgtag-del")p.storyTags.splice(+parts3[1],1);
+    else{var sc5=S(parts3[0]);sc5.npcs[+parts3[1]].abilityTags.splice(+parts3[2],1);}
+    save();render();}
+
+  /* 团队 / 故事标签新增 */
+  else if(act==="tm-add"||act==="sgt-add"){
+    var tx=prompt("标签内容：","");if(!tx)return;
+    var lvx=parseInt(prompt("等级（1-6）：","1"),10)||1;
+    if(act==="tm-add")p.teamTags.push({text:tx,level:lvx,used:0});
+    else p.storyTags.push({text:tx,level:lvx,used:0,persistent:confirm("是「持续」故事标签吗？（否则为临时，幕间恢复时移除）")});
+    save();render();}
+
+  /* 玩家状态 */
+  else if(act==="st-add"){
+    var lb=prompt("状态标签（如 受伤、昏迷、催眠）：","");if(!lb)return;
+    var lvl=parseInt(prompt("等级（1-6）：","2"),10)||1;
+    var kd=confirm("是「增益」状态吗？（取消=减益）")?"buff":"debuff";
+    p.status.push({label:lb.trim(),level:lvl,kind:kd});save();render();}
+  else if(act==="st-lv"){
+    p.status[i].level=Math.max(1,Math.min(6,p.status[i].level+d));
+    if(p.status[i].level>=5&&!confirm("等级 "+p.status[i].level+"："+slevel(p.status[i].level)+"，确定？")){save();render();return;}
+    save();render();}
+  else if(act==="st-del"){p.status.splice(i,1);save();render();}
+
+  /* 解锁 */
+  else if(act==="ul-char"){var cid=b.getAttribute("data-c");
+    var ix=p.unlockedCharacterIds.indexOf(cid);
+    if(b.checked&&ix<0)p.unlockedCharacterIds.push(cid);
+    if(!b.checked&&ix>=0)p.unlockedCharacterIds.splice(ix,1);save();}
+  else if(act==="ul-clue"){var lid=b.getAttribute("data-c");
+    var ix2=p.unlockedClueIds.indexOf(lid);
+    if(b.checked&&ix2<0)p.unlockedClueIds.push(lid);
+    if(!b.checked&&ix2>=0)p.unlockedClueIds.splice(ix2,1);save();}
+  else if(act==="uchar-add"){var n3=prompt("人物名：","");if(!n3)return;
+    state.unlocks.characters.push({id:uid("c"),name:n3,desc:prompt("简介：","")||""});save();render();}
+  else if(act==="uchar-edit"){var c1=state.unlocks.characters[i];
+    c1.name=prompt("人物名：",c1.name)||c1.name;c1.desc=prompt("简介：",c1.desc||"")||"";save();render();}
+  else if(act==="uchar-del"){state.unlocks.characters.splice(i,1);save();render();}
+  else if(act==="uclue-add"){var t3=prompt("线索内容：","");if(!t3)return;
+    state.unlocks.clues.push({id:uid("cl"),text:t3});save();render();}
+  else if(act==="uclue-edit"){var c2=state.unlocks.clues[i];
+    c2.text=prompt("线索内容：",c2.text)||c2.text;save();render();}
+  else if(act==="uclue-del"){state.unlocks.clues.splice(i,1);save();render();}
+
+  /* 场景 */
+  else if(act==="scene-add"){
+    var sn=prompt("场景名称：","");if(!sn)return;
+    state.scenes.push({id:uid("s"),name:sn,description:prompt("场景描述：","")||"",
+      timeState:prompt("当前时间状态（如 夜晚23:10）：","")||"",npcs:[],clues:[],unlockedCharacterIds:[],notes:""});
+    save();render();}
+  else if(act==="scene-edit"){var sc6=S(id);
+    sc6.name=prompt("场景名称：",sc6.name)||sc6.name;
+    sc6.timeState=prompt("当前时间状态：",sc6.timeState||"")||"";
+    sc6.description=prompt("场景描述：",sc6.description||"")||"";
+    sc6.notes=prompt("主持人备注：",sc6.notes||"")||"";save();render();}
+  else if(act==="scene-del"){
+    if(!confirm("删除场景 "+S(id).name+"？"))return;
+    state.scenes=state.scenes.filter(function(x){return x.id!==id;});
+    state.players.forEach(function(x){if(x.currentSceneId===id)x.currentSceneId="";});save();render();}
+
+  /* NPC */
+  else if(act==="npc-add"){
+    var nn=prompt("NPC 名称：","");if(!nn)return;
+    S(id).npcs.push({id:uid("n"),name:nn,description:prompt("描述：","")||"",
+      abilityTags:[],status:[],notes:""});save();render();}
+  else if(act==="npc-edit"){var pk=k.split(":");var n4=S(pk[0]).npcs[+pk[1]];
+    n4.name=prompt("NPC 名称：",n4.name)||n4.name;
+    n4.description=prompt("描述：",n4.description||"")||"";
+    n4.notes=prompt("备注：",n4.notes||"")||"";save();render();}
+  else if(act==="npc-del"){var pk2=k.split(":");
+    if(!confirm("删除该 NPC？"))return;S(pk2[0]).npcs.splice(+pk2[1],1);save();render();}
+  else if(act==="npcst-add"){
+    var lb2=prompt("状态标签：","");if(!lb2)return;
+    var lv2=parseInt(prompt("等级（1-6）：","2"),10)||1;
+    var pk3=k.split(":");
+    S(pk3[0]).npcs[+pk3[1]].status.push({label:lb2.trim(),level:lv2,kind:"debuff"});save();render();}
+  else if(act==="npcst-lv"){var pk4=k.split(":");
+    var s4=S(pk4[0]).npcs[+pk4[1]].status[i];
+    s4.level=Math.max(1,Math.min(6,s4.level+d));save();render();}
+  else if(act==="npcst-del"){var pk5=k.split(":");
+    S(pk5[0]).npcs[+pk5[1]].status.splice(i,1);save();render();}
+
+  /* 场景线索 */
+  else if(act==="clue-add"){
+    var ct=prompt("线索内容：","");if(!ct)return;
+    S(id).clues.push({id:uid("sc"),text:ct,discovered:confirm("已被玩家发现了吗？")});save();render();}
+  else if(act==="clue-tog"){var pk6=k.split(":");var c3=S(pk6[0]).clues[+pk6[1]];
+    c3.discovered=!c3.discovered;save();render();}
+  else if(act==="clue-del"){var pk7=k.split(":");S(pk7[0]).clues.splice(+pk7[1],1);save();render();}
+
+  /* 效力计算器 */
+  else if(act==="calc-open"){
+    if(!state.players.length){toast("请先添加玩家");return;}
+    var names=state.players.map(function(x,i){return i+1+". "+x.name;}).join("\n");
+    var vi=parseInt(prompt("为哪位玩家计算？\n"+names,"1"),10)||1;
+    var tp=state.players[vi-1];if(!tp)return;
+    cur.pid=tp.id;renderCalc(tp.id);}
+
+  /* 数据 */
+  else if(act==="do-import"){
+    var f=document.getElementById("cardFile");
+    if(!f.files.length){toast("请先选择人物卡文件");return;}importCard(f.files[0]);}
+  else if(act==="export"){
+    var blob=new Blob([JSON.stringify(state,null,1)],{type:"application/json"});
+    var a2=document.createElement("a");
+    a2.href=URL.createObjectURL(blob);
+    a2.download="迷雾之城存档_"+new Date().toISOString().slice(0,10)+".json";
+    a2.click();toast("已导出");}
+  else if(act==="do-import-json"){
+    var f2=document.getElementById("jsonFile");
+    if(!f2.files.length){toast("请先选择 JSON 文件");return;}
+    var r2=new FileReader();
+    r2.onload=function(ev){
+      try{var o=JSON.parse(ev.target.result);
+        if(!o.players)throw new Error("缺少 players 字段");
+        state=o;save();render();toast("存档已导入");}
+      catch(err){toast("导入失败："+err.message);}};
+    r2.readAsText(f2.files[0]);}
+  else if(act==="load-seed"){
+    if(!confirm("载入示例数据会覆盖当前内容，确定？"))return;
+    state=clone(window.SEED);save();render();toast("已载入示例数据");}
+  else if(act==="clear-all"){
+    if(!confirm("清空全部玩家与场景？此操作不可撤销。"))return;
+    state={campaign:state.campaign||"",players:[],scenes:[],
+      unlocks:{characters:[],clues:[]},statusColors:{}};
+    save();render();toast("已清空");}
+});
+/* change 事件（下拉 / 输入 / 复选） */
+document.getElementById("app").addEventListener("change",function(e){
+  var b=e.target.closest("[data-act]");if(!b)return;
+  var act=b.getAttribute("data-act"),id=b.getAttribute("data-id");
+  var p=id?P(id):null;
+  if(act==="set-scene"){p.currentSceneId=b.value;save();render();}
+  else if(act==="set-time"){p.currentTime=b.value;save();}
+  else if(act==="set-vigor"||act==="set-clues"){
+    p[act==="set-vigor"?"vigor":"clues"]=Math.max(0,parseInt(b.value,10)||0);save();}
+});
+function syncTabs(){
+  var bs=document.querySelectorAll("#tabs button");
+  for(var i=0;i<bs.length;i++)bs[i].classList.toggle("on",bs[i].getAttribute("data-tab")===tab);
+}
+
+/* ---------- 启动 ---------- */
+state=load();
+/* 数据自愈 */
+state.players=state.players||[];state.scenes=state.scenes||[];
+state.unlocks=state.unlocks||{characters:[],clues:[]};
+state.players.forEach(function(p){
+  p.reasonThemes=p.reasonThemes||[];p.divineThemes=p.divineThemes||[];p.extraThemes=p.extraThemes||[];
+  p.teamTags=p.teamTags||[];p.storyTags=p.storyTags||[];p.status=p.status||[];
+  p.unlockedCharacterIds=p.unlockedCharacterIds||[];p.unlockedClueIds=p.unlockedClueIds||[];
+  p.reasonThemes.concat(p.divineThemes,p.extraThemes).forEach(function(t){
+    (t.powerTags||[]).forEach(normTag);(t.weaknessTags||[]).forEach(normTag);
+    t.powerTags=t.powerTags||[];t.weaknessTags=t.weaknessTags||[];});
+  p.teamTags.forEach(normTag);p.storyTags.forEach(normTag);
+  p.status.forEach(function(s){s.level=Math.max(1,Math.min(6,parseInt(s.level,10)||1));});
+});
+state.scenes.forEach(function(s){
+  s.npcs=s.npcs||[];s.clues=s.clues||[];s.unlockedCharacterIds=s.unlockedCharacterIds||[];
+  s.npcs.forEach(function(n){(n.abilityTags||[]).forEach(normTag);
+    n.abilityTags=n.abilityTags||[];n.status=n.status||[];
+    n.status.forEach(function(x){x.level=Math.max(1,Math.min(6,parseInt(x.level,10)||1));});});
+});
+if(state.players[0])cur.pid=state.players[0].id;
+render();
+})();
+</script>
+</body>
+</html>
