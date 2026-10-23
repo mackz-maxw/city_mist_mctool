@@ -119,7 +119,8 @@ th{color:var(--dim);font-weight:600;font-size:12px}
 <script>
 (function(){
 "use strict";
-var KEY="misty_city_gm_v1";
+var KEY="misty_city_gm_v2", OLDKEY="misty_city_gm_v1";
+var DEMO_IDS=["p1","p2"];   /* 内置示例玩家，迁移时剔除 */
 var PAL=["#e05252","#4f9ddb","#e0a052","#7bbf6a","#b47bde","#4fbdb5","#d95f8a","#8a9a5b","#c96f4a","#6a8fd9"];
 var LVNAME={1:"轻微",2:"轻度",3:"主要",4:"戏剧性",5:"OUT",6:"MC"};
 
@@ -128,6 +129,14 @@ var state, tab="overview";
 function clone(o){return JSON.parse(JSON.stringify(o));}
 function load(){
   try{var s=localStorage.getItem(KEY);if(s)return JSON.parse(s);}catch(e){}
+  /* 迁移旧存档：只剔除内置示例玩家，保留用户自己导入的角色 */
+  try{var o=localStorage.getItem(OLDKEY);
+    if(o){var d=JSON.parse(o);
+      if(d&&d.players)d.players=d.players.filter(function(p){
+        return DEMO_IDS.indexOf(p.id)<0;});
+      /* 迁移一次即落盘，并清掉旧存档，避免每次打开重复迁移 */
+      try{localStorage.setItem(KEY,JSON.stringify(d));localStorage.removeItem(OLDKEY);}catch(e){}
+      return d;}}catch(e){}
   return clone(window.SEED);
 }
 function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){toast("保存失败：存储空间不足");}}
@@ -194,7 +203,10 @@ function tagActs(act,k){
 
 /* ---------- 渲染：概览 ---------- */
 function viewOverview(){
-  var h='<div class="grid g2">';
+  var h="";
+  if(!state.players.length)
+    h+='<div class="card" style="margin-bottom:10px"><div class="empty">还没有玩家角色，请在「数据 / 导入」中导入人物卡。</div></div>';
+  h+='<div class="grid g2">';
   state.players.forEach(function(p){
     var sc=S(p.currentSceneId);
     var total=0,burned=0;
@@ -487,7 +499,8 @@ function viewRules(){
 /* ---------- 效力计算器 ---------- */
 function renderCalc(pid){
   var box=document.getElementById("calcBox");if(!box)return;
-  var p=P(pid);if(!p){box.innerHTML="";return;}
+  var p=P(pid);
+  if(!p){box.innerHTML='<div class="card" style="background:var(--panel2)"><div class="empty">还没有玩家角色，导入人物卡后可在此计算效力。</div></div>';return;}
   var h='<div class="card" style="background:var(--panel2)"><h3>效力计算 · '+esc(p.name)+'</h3>';
   function group(title,arr,sign,kind,ti){
     var s='<div class="muted" style="margin-top:6px">'+title+'（'+sign+'1）</div>';
@@ -548,7 +561,7 @@ function viewData(){
     '<input type="file" id="jsonFile" accept=".json">'+
     '<button class="btn" data-act="do-import-json">导入 JSON</button></div>'+
     '<div class="row" style="margin-top:10px">'+
-    '<button class="btn" data-act="load-seed">载入示例数据</button>'+
+    '<button class="btn" data-act="load-seed">载入示例模组</button>'+
     '<button class="btn danger" data-act="clear-all">清空全部</button></div></div>';
   h+='</div>';
 
@@ -940,8 +953,10 @@ document.getElementById("app").addEventListener("click",function(e){
       catch(err){toast("导入失败："+err.message);}};
     r2.readAsText(f2.files[0]);}
   else if(act==="load-seed"){
-    if(!confirm("载入示例数据会覆盖当前内容，确定？"))return;
-    state=clone(window.SEED);save();render();toast("已载入示例数据");}
+    if(!confirm("载入示例模组会覆盖当前场景与解锁内容（玩家角色保留），确定？"))return;
+    var sd=clone(window.SEED);
+    state.campaign=sd.campaign;state.scenes=sd.scenes||[];state.unlocks=sd.unlocks||{characters:[],clues:[]};
+    save();render();toast("已载入示例模组（玩家角色保留）");}
   else if(act==="clear-all"){
     if(!confirm("清空全部玩家与场景？此操作不可撤销。"))return;
     state={campaign:state.campaign||"",players:[],scenes:[],
