@@ -9,6 +9,8 @@
   --bg:#12141a; --panel:#1a1d26; --panel2:#21252f; --line:#2c313d;
   --fg:#e6e8ee; --dim:#98a0b2; --gold:#c9a227; --gold2:#8a6f1c;
   --buff:#4caf50; --debuf:#e05252; --blue:#4f9ddb;
+  /* 规则书高亮约定（核心规则 第 9 页「高亮文本」）：标签=黄、状态=绿、频谱=红 */
+  --c-tag:#e8c14a; --c-tag2:#a8873a; --c-status:#5cc46a; --c-spec:#e05252;
 }
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--fg);
@@ -52,24 +54,33 @@ label.lb{font-size:12px;color:var(--dim);display:block;margin-bottom:3px}
   font-size:12px;border:1px solid transparent;white-space:nowrap}
 .badge .lv{font-weight:700}
 .buff{border-color:#2f6b33;background:rgba(76,175,80,.14);color:#7cc47f}
-.debuf{border-color:#7a2b2b;background:rgba(224,82,82,.14);color:#e88}
-.tagpill{display:inline-block;padding:2px 8px;border-radius:4px;font-size:12px;
+.debuf{border-color:#4b6636;background:rgba(138,154,91,.14);color:#a3b578}
+.burnb{border-color:var(--c-tag2);background:rgba(168,135,58,.16);color:var(--c-tag)}
+/* 频谱（危险因素）＝红色 */
+.spec{display:inline-flex;align-items:center;gap:5px;padding:2px 9px;border-radius:11px;
+  font-size:12px;border:1px solid var(--c-spec);color:var(--c-spec);
+  background:rgba(224,82,82,.12);margin:2px 4px 2px 0}
+.spec.done{background:rgba(224,82,82,.32);font-weight:700}
+.spec .mx{color:var(--dim)}
+.specbar{height:4px;border-radius:2px;background:var(--line);overflow:hidden;margin:4px 0}
+.specbar i{display:block;height:100%;background:var(--c-spec)}
+.tagpill{display:inline-block;padding:2px 8px;border-radius:4px;font-size:12px;color:var(--c-tag);
   background:var(--panel2);border:1px solid var(--line);margin:2px 4px 2px 0}
-.tagpill.pw{border-left:3px solid var(--blue)}
-.tagpill.wk{border-left:3px solid var(--gold)}
-.tagpill.st{border-left:3px solid #7bbf6a}
-.tagpill.tm{border-left:3px solid #b47bde}
+.tagpill.pw{border-left:3px solid var(--c-tag)}
+.tagpill.wk{border-left:3px solid var(--c-tag2)}
+.tagpill.st{border-left:3px solid var(--c-tag)}
+.tagpill.tm{border-left:3px solid var(--c-tag)}
 .burned{opacity:.45;text-decoration:line-through}
 .pips{display:inline-flex;gap:3px;margin:0 5px;vertical-align:middle}
 .pip{width:9px;height:9px;border-radius:50%;border:1px solid var(--line);background:var(--panel2)}
-.pip.on{background:var(--gold);border-color:var(--gold)}
-.pip.burn{background:var(--debuf);border-color:var(--debuf)}
+.pip.on{background:var(--c-tag);border-color:var(--c-tag)}
+.pip.burn{background:var(--c-tag2);border-color:var(--c-tag2)}
 ul.lst{list-style:none;margin:6px 0 0;padding:0}
 ul.lst li{padding:4px 0;border-bottom:1px dashed #262a34;display:flex;gap:8px;
   align-items:flex-start;justify-content:space-between}
 ul.lst li:last-child{border-bottom:none}
 .li-main{flex:1;min-width:0}
-.lt{color:var(--gold);font-weight:600;font-size:12px;margin-right:5px}
+.lt{color:var(--c-tag);font-weight:600;font-size:12px;margin-right:5px}
 /* 玩家卡 */
 .pcard{border-left:4px solid var(--line)}
 .avt{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;
@@ -148,10 +159,11 @@ function toast(m){var t=document.getElementById("toast");
   t._=setTimeout(function(){t.classList.remove("show");},2200);}
 
 /* 同类状态 → 同一颜色（按标签名哈希，稳定一致） */
+/* 规则书约定：状态以绿色高亮。同类状态仍同色，在绿色系内以明暗区分 */
 function scolor(label){
   var h=0,s=String(label||"");
   for(var i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))>>>0;
-  return PAL[h%PAL.length];
+  return "hsl("+(92+(h%52))+","+(54+((h>>3)%20))+"%,"+(54+((h>>7)%14))+"%)";
 }
 function slevel(lv){lv=+lv||1;return (LVNAME[lv]||("等级"+lv));}
 
@@ -190,7 +202,7 @@ function tagRow(t,acts,cls){
     (t.note?' title="问卷题：'+esc(t.note)+'"':'')+'>'+
     (t.letter?'<span class="lt">'+esc(t.letter)+'</span>':'')+esc(t.text)+'</span>'+
     pips(t)+'<span class="kv">'+t.used+'/'+t.level+'</span>'+
-    (burn?' <span class="badge debuf" style="padding:0 6px">燃尽</span>':'')+'</span>'+
+    (burn?' <span class="badge burnb" style="padding:0 6px">燃尽</span>':'')+'</span>'+
     '<span class="row">'+acts+'</span></li>';
 }
 /* act: tag | tmtag | sgtag | atag ; k: 位置参数串 */
@@ -396,6 +408,20 @@ function viewScenes(){
       });
       if(!n.status.length)h+='<span class="muted">无</span>';
       h+=' <button class="btn mini" data-act="npcst-add" data-k="'+sc.id+':'+ni+'">+ 状态</button></div>';
+      /* 频谱（危险因素）：标签 + 最大值 1-6，累计等级达到最大值即被克服/转化 */
+      h+='<div class="muted" style="margin-top:8px">频谱 <span style="color:var(--c-spec)">（危险因素）</span></div>';
+      var sps=n.spectrums||[];
+      sps.forEach(function(sp,i){
+        var mx=+sp.max||1, cur=+sp.current||0, done=cur>=mx;
+        h+='<div style="margin:3px 0"><span class="spec'+(done?' done':'')+'">'+esc(sp.label)+' '+cur+
+           '<span class="mx">/'+mx+'</span>'+(done?' ✔ 已达极限':'')+'</span>'+
+           '<button class="btn mini" data-act="spec-cur" data-k="'+sc.id+':'+ni+':'+i+'" data-d="-1">−</button>'+
+           '<button class="btn mini" data-act="spec-cur" data-k="'+sc.id+':'+ni+':'+i+'" data-d="1">+</button>'+
+           '<button class="btn mini danger" data-act="spec-del" data-k="'+sc.id+':'+ni+':'+i+'">×</button>'+
+           '<div class="specbar"><i style="width:'+Math.min(100,Math.round(cur/mx*100))+'%"></i></div></div>';
+      });
+      if(!sps.length)h+='<div class="empty" style="padding:2px 0">无频谱</div>';
+      h+='<button class="btn mini" data-act="spec-add" data-k="'+sc.id+':'+ni+'">+ 频谱</button>';
       if(n.notes)h+='<div class="kv" style="margin-top:6px">备注：'+esc(n.notes)+'</div>';
       h+='</div>';
     });
@@ -451,6 +477,41 @@ function viewUnlocks(){
 }
 
 /* ---------- 渲染：规则速查 ---------- */
+/* 八个核心动作，原文照录《迷雾之城玩家动作》速查表 */
+var MOVES=[
+ {n:"调查",t:"运用能力寻找棘手问题的答案。",r:[
+  "成功：获得<b>线索 = 效力</b>；可逐条花费线索向 MC 询问调查目标的问题，或向另一名玩家询问其角色的问题，对方必须给出直接答案或可靠提示。",
+  "7-9 时对方还可选择一项：① 你的调查使你暴露在危险之中；② 线索模糊、不完整或半真半假；③ 被询问的人或物也可以回问你一个问题（回答遵循同样规则）。"]},
+ {n:"说服",t:"运用能力说服、威胁或诱惑他人做某事。",r:[
+  "成功：选择一个相关的状态，<b>等级 = 效力</b>。目标可以接受这个状态，或做出让步。",
+  "7-9：做出一点让步，但依旧维护自己的主张。",
+  "10+：改变自己的主张，将你的观点纳入考量（至少暂时如此）。"]},
+ {n:"直面危险",t:"运用能力阻挡袭来的攻击、忍受伤害、抵挡恶意影响或保持镇定。MC（或对方玩家）先给出状态的标签与等级。",r:[
+  "10+：抵挡住效果，无需承受任何状态。",
+  "7-9：需要承受状态，但等级 −1。",
+  "失败：完整承受该状态。"]},
+ {n:"全力一击",t:"面前毫无阻拦，运用能力全力攻击某人或某物。",r:[
+  "成功：赋予目标一个合适的状态，<b>等级 = 效力</b>。10+ 选下列 2 项，7-9 选 1 项：",
+  "① 占领或巩固有利地位（不选此项，对方可对你施加状态；若对方是玩家角色，状态等级 = 其效力）。",
+  "② 狠狠挫败对方，或击中多个对手（状态等级 +1）。",
+  "③ 控制住附带伤害。",
+  "④ 吸引住目标的注意力（如果可能）。",
+  "⑤ 占据上风，获得 1 点活力。"]},
+ {n:"针锋相对",t:"运用能力在争夺控制权的斗争中战胜某人或某物。先阐述你的目标，对手描述如何回应。",r:[
+  "7-9 选 1 项，10+ 选 2 项：",
+  "① 设法达成自己的目标（例如抓住对方拿着的东西）。",
+  "② 痛击对手，赋予对方一个状态，等级 = 效力。",
+  "③ 阻拦、闪躲或反制住对方最努力的尝试（不选此项，对方可对你施加状态；若对方是玩家角色，状态等级 = 其效力）。"]},
+ {n:"改变局势",t:"运用能力赋予自己或盟友优势。",r:[
+  "成功：获得<b>活力 = 效力</b>。每 1 点活力可换一项：创造一个故事标签 / 燃尽一个力量标签或故事标签 / 给予或降低一个状态（每点 1 级）。",
+  "10+：至少获得 2 点活力，并可额外用活力选择增强：增大效果（加大范围或增加目标）/ 延长效果（变为持续状态）/ 隐藏效果 / 任何你与 MC 同意的增强。"]},
+ {n:"隐秘行事",t:"运用能力秘密地或欺骗性地行动。",r:[
+  "10+：所有应受蒙蔽的人都会受蒙蔽。",
+  "7-9：情况变得复杂，MC 选择 1 项 —— ① 有个无关紧要的人注意到了你，但这就让他变得很重要了；② 你被注意到了，但只是些次要的感觉（对方闻到你的气味；别人看见你在说话但没听到内容）；③ 你必须留下一样东西，否则就会被发现。"]},
+ {n:"承担风险",t:"进行勇敢、冒险或欠考虑的举动。",r:[
+  "10+：你设法做到了。",
+  "7-9：事情就麻烦了，MC 会给你苛刻的条件或危险的选择。"]}
+];
 function viewRules(){
   var h='';
   h+='<div class="card"><h3>状态等级</h3><table><tr><th>等级</th><th>名称</th><th>含义</th></tr>'+
@@ -479,16 +540,32 @@ function viewRules(){
     '<button class="btn gold" data-act="calc-open">打开效力计算器</button></div>'+
     '<div id="calcBox" style="margin-top:12px"></div></div>';
 
-  h+='<div class="card"><h3>核心动作</h3><table><tr><th>动作</th><th>用途</th><th>成功效果要点</th></tr>'+
-    [['改变局势','给自己/同伴优势','获得活力 = 效力'],
-     ['说服','劝说、威胁、引诱','施加等级=效力的状态，目标可选择让步'],
-     ['直面危险','抵挡打击、忍受伤害、抵抗影响','10+ 免除；7-9 状态等级-1'],
-     ['针锋相对','争夺控制权','7-9 选 1 项 / 10+ 选 2 项'],
-     ['全力一击','无阻拦时全力攻击','施加等级=效力的状态'],
-     ['调查','寻找答案、获取信息','获得线索 = 效力，1 线索换 1 个问题'],
-     ['隐秘行事','小心或误导地行事','——'],
-     ['承担风险','勇敢冒险的壮举','——']].map(function(r){
-      return '<tr><td><b>'+r[0]+'</b></td><td>'+r[1]+'</td><td>'+r[2]+'</td></tr>';}).join("")+'</table></div>';
+  h+='<div class="card"><h3>高亮颜色约定</h3><div class="kv">'+
+    '依据规则书（核心规则 第 9 页「高亮文本」），本工具采用同一套颜色：<br>'+
+    '<span style="color:var(--c-tag)">■ 标签（力量 / 弱点 / 团队 / 故事标签）＝黄色</span>　'+
+    '<span style="color:var(--c-status)">■ 状态＝绿色</span>　'+
+    '<span style="color:var(--c-spec)">■ 频谱＝红色</span></div></div>';
+
+  h+='<div class="card"><h3>玩家常用行动（八个核心动作）</h3>'+
+    '<div class="kv" style="margin-bottom:6px">掷骰：<b>2d6 + 效力</b>。10+ 大成功，7-9 成功带代价，6 及以下失败（由 MC 裁决后果）。</div>';
+  MOVES.forEach(function(m){
+    h+='<div style="margin:12px 0;padding-top:9px;border-top:1px dashed #262a34">'+
+      '<div style="font-size:14px;font-weight:600;color:var(--c-tag)">'+m.n+'</div>'+
+      '<div class="kv" style="margin:4px 0">触发：'+m.t+'</div>'+
+      '<ul class="lst">'+m.r.map(function(x){
+        return '<li><span class="li-main">'+x+'</span></li>';}).join("")+'</ul></div>';
+  });
+  h+='</div>';
+
+  h+='<div class="card"><h3><span style="color:var(--c-spec)">频谱</span>（危险因素）</h3><div class="kv">'+
+    '频谱代表一个危险因素在永久改变之前<b>能承受多少特定状态</b>，通常表明了可以克服它的方式。'+
+    '每个频谱 = <b>描述性标签 + 最大值（1-6）</b>，一个危险因素可拥有多个频谱。</div><ul class="lst">'+
+    '<li><span class="li-main">玩家在频谱上叠加状态，当状态等级 <b>≥ 最大值</b> 时频谱达到极限 → 该危险因素被克服或转化，不再对调查构成威胁。</span></li>'+
+    '<li><span class="li-main">频谱上的状态叠加规则与玩家角色一致：更高取代、相同 +1 级、更低逐次累计。</span></li>'+
+    '<li><span class="li-main">最大值越大越难克服。例：伤害:3 的保安承受 枪伤-3 后被击败；惊吓致死:1 的友善老人即使受 惊吓-1 也会死亡；倒塌:4 的着火建筑承受 加强筋熔毁-3 + 结构损坏-3（累加至 4）后倒塌。</span></li>'+
+    '<li><span class="li-main"><b>倒计时频谱</b>达到极限会触发一个危险因素动作（如炸弹滴答:5、房屋倒塌:4），代表主角们不希望看到的结局。</span></li>'+
+    '<li><span class="li-main">若危险因素没有对应频谱，说明该结果不构成持续冲突，可无需施加任何状态直接达成。</span></li>'+
+    '</ul><div class="kv" style="margin-top:8px">在「场景」页可为每个 NPC 添加频谱（红色显示），当前等级达到最大值时会标记「已达极限」。</div></div>';
 
   h+='<div class="card"><h3>主题与焦点</h3><div class="kv">'+
     '理法主题含<b>身份</b>陈述与 3 格<b>裂痕</b>：违背身份即标记 1 格裂痕；裂痕满 3 格 → 该理法主题替换为新的神法主题。'+
@@ -898,7 +975,7 @@ document.getElementById("app").addEventListener("click",function(e){
   else if(act==="npc-add"){
     var nn=prompt("NPC 名称：","");if(!nn)return;
     S(id).npcs.push({id:uid("n"),name:nn,description:prompt("描述：","")||"",
-      abilityTags:[],status:[],notes:""});save();render();}
+      abilityTags:[],status:[],spectrums:[],notes:""});save();render();}
   else if(act==="npc-edit"){var pk=k.split(":");var n4=S(pk[0]).npcs[+pk[1]];
     n4.name=prompt("NPC 名称：",n4.name)||n4.name;
     n4.description=prompt("描述：",n4.description||"")||"";
@@ -915,6 +992,20 @@ document.getElementById("app").addEventListener("click",function(e){
     s4.level=Math.max(1,Math.min(6,s4.level+d));save();render();}
   else if(act==="npcst-del"){var pk5=k.split(":");
     S(pk5[0]).npcs[+pk5[1]].status.splice(i,1);save();render();}
+
+  /* 频谱（危险因素） */
+  else if(act==="spec-add"){
+    var sl=prompt("频谱标签（描述克服该危险因素的方式，如「伤害」「说服」「倒塌」）：","");
+    if(!sl||!sl.trim())return;
+    var sm=parseInt(prompt("频谱最大值（1-6，越大越难克服）：","3"),10)||3;
+    var sk=k.split(":");
+    S(sk[0]).npcs[+sk[1]].spectrums.push({label:sl.trim(),max:Math.max(1,Math.min(6,sm)),current:0});
+    save();render();}
+  else if(act==="spec-cur"){var sk2=k.split(":");
+    var sp2=S(sk2[0]).npcs[+sk2[1]].spectrums[+sk2[2]];
+    sp2.current=Math.max(0,Math.min(6,(+sp2.current||0)+d));save();render();}
+  else if(act==="spec-del"){var sk3=k.split(":");
+    S(sk3[0]).npcs[+sk3[1]].spectrums.splice(+sk3[2],1);save();render();}
 
   /* 场景线索 */
   else if(act==="clue-add"){
@@ -997,7 +1088,12 @@ state.scenes.forEach(function(s){
   s.npcs=s.npcs||[];s.clues=s.clues||[];s.unlockedCharacterIds=s.unlockedCharacterIds||[];
   s.npcs.forEach(function(n){(n.abilityTags||[]).forEach(normTag);
     n.abilityTags=n.abilityTags||[];n.status=n.status||[];
-    n.status.forEach(function(x){x.level=Math.max(1,Math.min(6,parseInt(x.level,10)||1));});});
+    n.status.forEach(function(x){x.level=Math.max(1,Math.min(6,parseInt(x.level,10)||1));});
+    /* 频谱：描述性标签 + 最大值(1-6) + 当前已承受等级 */
+    n.spectrums=n.spectrums||[];
+    n.spectrums.forEach(function(sp){
+      sp.max=Math.max(1,Math.min(6,parseInt(sp.max,10)||1));
+      sp.current=Math.max(0,Math.min(6,parseInt(sp.current,10)||0));});});
 });
 if(state.players[0])cur.pid=state.players[0].id;
 render();
