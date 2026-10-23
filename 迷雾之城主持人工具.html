@@ -71,6 +71,10 @@ label.lb{font-size:12px;color:var(--dim);display:block;margin-bottom:3px}
 .slot:hover{border-color:var(--fg)}
 .slot.on-f{background:var(--c-status);border-color:var(--c-status)}
 .slot.on-c{background:var(--c-spec);border-color:var(--c-spec)}
+/* 团队关系点数：帮助＝绿 / 伤害＝红 */
+.rel{font-size:12px;padding:1px 7px;border-radius:4px;margin-right:5px;white-space:nowrap}
+.rel.help{color:var(--c-status);background:rgba(92,196,106,.12)}
+.rel.hurt{color:var(--c-spec);background:rgba(224,82,82,.12)}
 .tagpill{display:inline-block;padding:2px 8px;border-radius:4px;font-size:12px;color:var(--c-tag);
   background:var(--panel2);border:1px solid var(--line);margin:2px 4px 2px 0}
 .tagpill.pw{border-left:3px solid var(--c-tag)}
@@ -123,6 +127,7 @@ th{color:var(--dim);font-weight:600;font-size:12px}
 <nav id="tabs">
   <button data-tab="overview" class="on">概览</button>
   <button data-tab="players">玩家</button>
+  <button data-tab="team">团队</button>
   <button data-tab="scenes">场景 / 模组</button>
   <button data-tab="unlocks">解锁</button>
   <button data-tab="rules">规则速查</button>
@@ -403,6 +408,54 @@ function viewPlayers(){
 }
 
 /* ---------- 渲染：场景 ---------- */
+/* ---------- 团队关系：帮助 / 伤害点数 ---------- */
+function rel(from,to){
+  state.relations=state.relations||{};
+  state.relations[from]=state.relations[from]||{};
+  if(!state.relations[from][to])state.relations[from][to]={help:0,hurt:0};
+  return state.relations[from][to];
+}
+function relBtns(a,b,f){
+  return '<button class="btn mini" data-act="rel" data-k="'+a.id+':'+b.id+'" data-f="'+f+'" data-d="1">+</button>'+
+         '<button class="btn mini" data-act="rel" data-k="'+a.id+':'+b.id+'" data-f="'+f+'" data-d="-1">−</button>';
+}
+function viewTeam(){
+  if(state.players.length<2)
+    return '<div class="card"><div class="empty">需要至少 2 名玩家才能记录团队关系。请先在「数据 / 导入」中导入人物卡。</div></div>';
+  var h='<div class="card"><h3>团队关系：帮助 / 伤害点数</h3>'+
+    '<div class="kv" style="margin-bottom:8px">行＝<b>持有者</b>，列＝<b>对象</b>。'+
+    '<span style="color:var(--c-status)">花费 1 点帮助点数</span>可赋予对方一个<b>正面</b>临时状态，'+
+    '<span style="color:var(--c-spec)">花费 1 点伤害点数</span>赋予一个<b>负面</b>临时状态；'+
+    '对方<b>不能</b>对该状态进行直面危险动作。</div>';
+  h+='<table><tr><th>持有者 ＼ 对象</th>';
+  state.players.forEach(function(p){h+='<th>'+esc(p.name)+'</th>';});
+  h+='</tr>';
+  state.players.forEach(function(a){
+    h+='<tr><td><b>'+esc(a.name)+'</b></td>';
+    state.players.forEach(function(b){
+      if(b.id===a.id){h+='<td class="muted">—</td>';return;}
+      var r=rel(a.id,b.id);
+      h+='<td><span class="rel help">帮助 <b>'+r.help+'</b></span>'+relBtns(a,b,"help")+
+         '<div style="margin-top:4px"><span class="rel hurt">伤害 <b>'+r.hurt+'</b></span>'+relBtns(a,b,"hurt")+'</div></td>';
+    });
+    h+='</tr>';
+  });
+  h+='</table>'+
+    '<div class="muted" style="margin-top:8px">多名队友同时帮助或阻碍时，状态需处于<b>同一频谱</b>才能叠加；'+
+    '否则只有等级最高的帮助状态与等级最高的阻碍状态生效。</div></div>';
+
+  h+='<div class="card"><h3>团队标签总览</h3>';
+  var has=false;
+  state.players.forEach(function(p){
+    if(!(p.teamTags||[]).length)return;
+    has=true;
+    h+='<div style="margin-top:6px"><span class="muted">'+esc(p.name)+'：</span>'+
+       p.teamTags.map(function(t){return '<span class="tagpill tm">'+esc(t.text)+'</span>';}).join("")+'</div>';
+  });
+  if(!has)h+='<div class="empty">还没有团队标签。导入人物卡时，团队主题的力量标签会自动并入团队标签。</div>';
+  h+='</div>';
+  return h;
+}
 function viewScenes(){
   var h='<div class="row" style="margin-bottom:12px"><button class="btn gold" data-act="scene-add">+ 新增场景</button></div>';
   if(!state.scenes.length)return h+'<div class="empty">还没有场景</div>';
@@ -442,13 +495,13 @@ function viewScenes(){
       h+='<div class="muted" style="margin-top:8px">频谱 <span style="color:var(--c-spec)">（危险因素）</span></div>';
       var sps=n.spectrums||[];
       sps.forEach(function(sp,i){
-        var mx=+sp.max||1, cur=+sp.current||0, done=cur>=mx;
-        h+='<div style="margin:3px 0"><span class="spec'+(done?' done':'')+'">'+esc(sp.label)+' '+cur+
+        var mx=+sp.max||1, spCur=+sp.current||0, done=spCur>=mx;
+        h+='<div style="margin:3px 0"><span class="spec'+(done?' done':'')+'">'+esc(sp.label)+' '+spCur+
            '<span class="mx">/'+mx+'</span>'+(done?' ✔ 已达极限':'')+'</span>'+
            '<button class="btn mini" data-act="spec-cur" data-k="'+sc.id+':'+ni+':'+i+'" data-d="-1">−</button>'+
            '<button class="btn mini" data-act="spec-cur" data-k="'+sc.id+':'+ni+':'+i+'" data-d="1">+</button>'+
            '<button class="btn mini danger" data-act="spec-del" data-k="'+sc.id+':'+ni+':'+i+'">×</button>'+
-           '<div class="specbar"><i style="width:'+Math.min(100,Math.round(cur/mx*100))+'%"></i></div></div>';
+           '<div class="specbar"><i style="width:'+Math.min(100,Math.round(spCur/mx*100))+'%"></i></div></div>';
       });
       if(!sps.length)h+='<div class="empty" style="padding:2px 0">无频谱</div>';
       h+='<button class="btn mini" data-act="spec-add" data-k="'+sc.id+':'+ni+'">+ 频谱</button>';
@@ -610,6 +663,15 @@ function viewRules(){
     '<li><span class="li-main">团队主题同样拥有谜题 / 身份与淡出 / 裂痕槽，规则相同；第 3 格被标记则替换该团队主题。</span></li>'+
     '</ul><div class="kv" style="margin-top:8px">在「玩家」页每个主题卡片上可直接点击槽位格子标记（再点一次取消）；'+
     '导入人物卡时会读取卡上已标记的格数。</div></div>';
+
+  h+='<div class="card"><h3>帮助 / 伤害点数（团队关系）</h3><div class="kv">'+
+    '每名角色对<b>其他每一名队友</b>分别记录<span style="color:var(--c-status)">帮助点数</span>与'+
+    '<span style="color:var(--c-spec)">伤害点数</span>，代表两人之间的关系。</div><ul class="lst">'+
+    '<li><span class="li-main"><b>获得</b>：创造团队关系时按问卷结果在对方身上记录（例如「他曾在关键时刻激励你超越极限」记帮助点数；「他不懂变通，曾因此伤害过团队」记伤害点数）；剧终狂欢时也可在对方名字旁 +1。</span></li>'+
+    '<li><span class="li-main"><b>使用</b>：要协助或阻碍队友的行动，最简单的办法是<b>花费 1 点</b>帮助或伤害点数，赋予对方一个正面或负面的<b>临时状态</b>；对方<b>不能</b>对该状态进行直面危险动作。</span></li>'+
+    '<li><span class="li-main">另一种办法是<b>花费活力</b>（或先用改变局势动作专门获得活力）；若你在不情愿的情况下成为队友行动的目标，也可以激活队友的弱点标签。</span></li>'+
+    '<li><span class="li-main">多名队友同时帮助或阻碍时，这些状态需处于<b>同一频谱</b>才能叠加；否则不能叠加，只有等级最高的帮助状态与等级最高的阻碍状态生效。</span></li>'+
+    '</ul><div class="kv" style="margin-top:8px">在「团队」页以表格记录：行＝持有者，列＝对象。</div></div>';
   return h;
 }
 
@@ -714,6 +776,7 @@ function render(){
   var app=document.getElementById("app");
   if(tab==="overview")app.innerHTML=viewOverview();
   else if(tab==="players")app.innerHTML=viewPlayers();
+  else if(tab==="team")app.innerHTML=viewTeam();
   else if(tab==="scenes")app.innerHTML=viewScenes();
   else if(tab==="unlocks")app.innerHTML=viewUnlocks();
   else if(tab==="rules"){app.innerHTML=viewRules();renderCalc(cur.pid||(state.players[0]&&state.players[0].id));}
@@ -914,8 +977,8 @@ document.getElementById("app").addEventListener("click",function(e){
     /* 点击槽位第 n 格：设为 n；点同一格则取消（n-1） */
     var ks=k.split(":");var thS=themes(P(ks[1]),ks[0])[+ks[2]];
     var fld=b.getAttribute("data-f"), vv=+b.getAttribute("data-v");
-    var cur=+thS[fld]||0;
-    thS[fld]=(cur===vv)?vv-1:vv;save();render();}
+    var curVal=+thS[fld]||0;
+    thS[fld]=(curVal===vv)?vv-1:vv;save();render();}
   else if(act==="th-edit"){
     var kk2=parseK(k);var th2=themes(p,kk2.kind)[kk2.ti];
     th2.name=prompt("主题名称：",th2.name||"")||th2.name;
@@ -1063,6 +1126,11 @@ document.getElementById("app").addEventListener("click",function(e){
   else if(act==="spec-del"){var sk3=k.split(":");
     S(sk3[0]).npcs[+sk3[1]].spectrums.splice(+sk3[2],1);save();render();}
 
+  /* 团队关系：帮助 / 伤害点数 */
+  else if(act==="rel"){var rk=k.split(":");var rr=rel(rk[0],rk[1]);
+    var rf=b.getAttribute("data-f");
+    rr[rf]=Math.max(0,(+rr[rf]||0)+d);save();render();}
+
   /* 场景线索 */
   else if(act==="clue-add"){
     var ct=prompt("线索内容：","");if(!ct)return;
@@ -1130,6 +1198,7 @@ state=load();
 /* 数据自愈 */
 state.players=state.players||[];state.scenes=state.scenes||[];
 state.unlocks=state.unlocks||{characters:[],clues:[]};
+state.relations=state.relations||{};   /* 帮助 / 伤害点数：[持有者][对象]={help,hurt} */
 state.players.forEach(function(p){
   p.reasonThemes=p.reasonThemes||[];p.divineThemes=p.divineThemes||[];p.extraThemes=p.extraThemes||[];
   p.teamTags=p.teamTags||[];p.storyTags=p.storyTags||[];p.status=p.status||[];
