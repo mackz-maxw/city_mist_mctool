@@ -64,6 +64,13 @@ label.lb{font-size:12px;color:var(--dim);display:block;margin-bottom:3px}
 .spec .mx{color:var(--dim)}
 .specbar{height:4px;border-radius:2px;background:var(--line);overflow:hidden;margin:4px 0}
 .specbar i{display:block;height:100%;background:var(--c-spec)}
+/* 焦点槽（绿＝成长）与 裂痕/淡出槽（红＝恶化） */
+.slots{display:inline-flex;gap:4px;vertical-align:middle;margin-left:4px}
+.slot{width:15px;height:15px;border-radius:3px;border:1px solid var(--line);
+  background:var(--panel2);padding:0;cursor:pointer;display:inline-block}
+.slot:hover{border-color:var(--fg)}
+.slot.on-f{background:var(--c-status);border-color:var(--c-status)}
+.slot.on-c{background:var(--c-spec);border-color:var(--c-spec)}
 .tagpill{display:inline-block;padding:2px 8px;border-radius:4px;font-size:12px;color:var(--c-tag);
   background:var(--panel2);border:1px solid var(--line);margin:2px 4px 2px 0}
 .tagpill.pw{border-left:3px solid var(--c-tag)}
@@ -267,6 +274,27 @@ function viewOverview(){
 }
 
 /* ---------- 渲染：玩家 ---------- */
+/* 焦点槽（绿＝成长）与 裂痕/淡出槽（红＝恶化），各 3 格 */
+function slotRow(k,field,v){
+  var h='<span class="slots">';
+  for(var i=1;i<=3;i++){
+    h+='<button class="slot'+(i<=v?(field==="focus"?" on-f":" on-c"):"")+
+       '" data-act="th-slot" data-k="'+k+'" data-f="'+field+'" data-v="'+i+
+       '" title="点击标记第 '+i+' 格（再点一次取消）"></button>';
+  }
+  return h+'</span>';
+}
+function slotBlock(k,kind,th){
+  var crackName=(kind==="divine")?"淡出":"裂痕";
+  var f=+th.focus||0, c=+th.cracks||0;
+  return '<div class="row" style="margin-top:9px;gap:24px;flex-wrap:wrap">'+
+    '<div><span class="muted">焦点（成长）</span>'+slotRow(k,"focus",f)+
+      '<span class="muted"> '+f+'/3</span>'+
+      (f>=3?' <span style="color:var(--c-status)">已满 3 点 → 可选一项提升，随后重置</span>':'')+'</div>'+
+    '<div><span class="muted">'+crackName+'（恶化）</span>'+slotRow(k,"cracks",c)+
+      '<span class="muted"> '+c+'/3</span>'+
+      (c>=3?' <span style="color:var(--c-spec)">已满 3 格 → 应替换该主题</span>':'')+'</div></div>';
+}
 function themeBlock(p,kind,ti){
   var th=themes(p,kind)[ti];
   var k=kind+":"+p.id+":"+ti;
@@ -277,8 +305,10 @@ function themeBlock(p,kind,ti){
     '<span class="row" style="margin-left:auto">'+
     '<button class="btn mini" data-act="th-edit" data-k="'+k+'">编辑</button>'+
     '<button class="btn mini danger" data-act="th-del" data-k="'+k+'">删除主题</button></span></h3>';
-  if(th.identity)h+='<div class="kv">身份：'+esc(th.identity)+'</div>';
+  var idLabel=(kind==="divine")?"谜题":"身份";
+  if(th.identity)h+='<div class="kv">'+idLabel+'：'+esc(th.identity)+'</div>';
   if(th.description)h+='<div class="kv" style="margin-top:3px">'+esc(th.description)+'</div>';
+  h+=slotBlock(k,kind,th);
   h+='<div class="muted" style="margin-top:8px">力量标签</div><ul class="lst">';
   th.powerTags.forEach(function(t,i){h+=tagRow(t,tagActs("tag",k+":power:"+i),"pw");});
   h+='</ul><button class="btn mini" data-act="tag-add" data-k="'+k+':power">+ 力量标签</button>';
@@ -567,9 +597,19 @@ function viewRules(){
     '<li><span class="li-main">若危险因素没有对应频谱，说明该结果不构成持续冲突，可无需施加任何状态直接达成。</span></li>'+
     '</ul><div class="kv" style="margin-top:8px">在「场景」页可为每个 NPC 添加频谱（红色显示），当前等级达到最大值时会标记「已达极限」。</div></div>';
 
-  h+='<div class="card"><h3>主题与焦点</h3><div class="kv">'+
-    '理法主题含<b>身份</b>陈述与 3 格<b>裂痕</b>：违背身份即标记 1 格裂痕；裂痕满 3 格 → 该理法主题替换为新的神法主题。'+
-    '激活弱点标签可标记 1 次对应主题的<b>焦点</b>。神法与理法需保持平衡，极端会导致超限解放或成为化身。</div></div>';
+  h+='<div class="card"><h3>焦点 · 裂痕 · 淡出</h3><div class="kv">'+
+    '每个主题都有两个 3 格槽位：<span style="color:var(--c-status)">焦点槽（绿）</span>记录主题的成长，'+
+    '<span style="color:var(--c-spec)">裂痕 / 淡出槽（红）</span>记录主题的恶化。</div><ul class="lst">'+
+    '<li><span class="li-main"><b>焦点</b>：每激活一条<b>弱点标签</b>（效力 −1），就在它所属的主题上标记 1 点焦点；'+
+    '为遵守身份而牺牲真正想要的东西，也标记焦点。某主题积累 <b>3 点焦点</b> → 可为该主题选择一项提升'+
+    '（如一个新的力量标签或特定主题提升），随后<b>重置</b>焦点槽。</span></li>'+
+    '<li><span class="li-main"><b>裂痕</b>（理法主题）：当你的行动或选择与<b>身份</b>相违背，或受到的影响使你放弃了信念，标记 1 格裂痕。</span></li>'+
+    '<li><span class="li-main"><b>淡出</b>（神法主题）：当谜题的答案触手可及而你<b>放弃</b>了它，标记 1 格淡出。</span></li>'+
+    '<li><span class="li-main">裂痕 / 淡出槽 <b>3 格填满 → 替换该主题</b>：理法主题失去身份所代表的一切，由一个<b>新的神法主题</b>取代。</span></li>'+
+    '<li><span class="li-main">即使眼前没有两难困境，若某主题正在被明显且实质地削弱，也可主动标记 1 格淡出或裂痕。</span></li>'+
+    '<li><span class="li-main">团队主题同样拥有谜题 / 身份与淡出 / 裂痕槽，规则相同；第 3 格被标记则替换该团队主题。</span></li>'+
+    '</ul><div class="kv" style="margin-top:8px">在「玩家」页每个主题卡片上可直接点击槽位格子标记（再点一次取消）；'+
+    '导入人物卡时会读取卡上已标记的格数。</div></div>';
   return h;
 }
 
@@ -732,8 +772,14 @@ function importCard(file){
       BLOCKS.forEach(function(c0){
         var type=G(2,c0+2);            // 理法主题 / 神法主题 / 团队主题 / 附加主题
         var qn=G(3,c0+2);              // 主题名（即问卷名）
+        /* 行 8：+0「焦点」+1~3 为焦点槽；+4「裂痕」或「淡出」+5~7 为恶化槽。
+           卡上未标记的格子是「○」，其它任何标记（●/✔ 等）都算已标记。 */
+        var focus=0,cracks=0;
+        for(var fi=1;fi<=3;fi++){var fv=G(8,c0+fi);if(fv&&fv!=="○")focus++;}
+        for(var ci=5;ci<=7;ci++){var cv=G(8,c0+ci);if(cv&&cv!=="○")cracks++;}
         var th={name:qn,questionnaire:qn?qn+"问卷":"",title:G(4,c0+2),
-                identity:G(5,c0+2),description:G(6,c0+2),powerTags:[],weaknessTags:[]};
+                identity:G(5,c0+2),description:G(6,c0+2),
+                focus:focus,cracks:cracks,powerTags:[],weaknessTags:[]};
         for(var i=0;i<5;i++){
           var qr=10+2*i, ar=11+2*i;
           var letter=G(qr,c0)||G(ar,c0);
@@ -864,6 +910,12 @@ document.getElementById("app").addEventListener("click",function(e){
     } else {var nm=prompt("主题名称：","");if(!nm)return;
       th={name:nm,questionnaire:"",title:"",identity:"",description:"",powerTags:[],weaknessTags:[]};}
     themes(p,kk.kind).push(th);save();render();}
+  else if(act==="th-slot"){
+    /* 点击槽位第 n 格：设为 n；点同一格则取消（n-1） */
+    var ks=k.split(":");var thS=themes(P(ks[1]),ks[0])[+ks[2]];
+    var fld=b.getAttribute("data-f"), vv=+b.getAttribute("data-v");
+    var cur=+thS[fld]||0;
+    thS[fld]=(cur===vv)?vv-1:vv;save();render();}
   else if(act==="th-edit"){
     var kk2=parseK(k);var th2=themes(p,kk2.kind)[kk2.ti];
     th2.name=prompt("主题名称：",th2.name||"")||th2.name;
@@ -895,6 +947,10 @@ document.getElementById("app").addEventListener("click",function(e){
     else if(act==="tmtag-use")t=p.teamTags[+parts[1]];
     else if(act==="sgtag-use")t=p.storyTags[+parts[1]];
     else{var sc3=S(parts[0]);t=sc3.npcs[+parts[1]].abilityTags[+parts[2]];}
+    /* 规则：每激活一条弱点标签，效力 −1，并在其所属主题标记 1 点焦点（上限 3） */
+    if(act==="tag-use"&&parts[3]==="weakness"&&d>0){
+      var thW=themes(p,kk5.kind)[kk5.ti];
+      if((+thW.focus||0)<3)thW.focus=(+thW.focus||0)+1;}
     t.used=Math.max(0,Math.min(t.level,t.used+d));save();render();}
   else if(/^(tag|tmtag|sgtag|atag)-lv$/.test(act)){
     var parts2=k.split(":"),t2;
@@ -1080,7 +1136,10 @@ state.players.forEach(function(p){
   p.unlockedCharacterIds=p.unlockedCharacterIds||[];p.unlockedClueIds=p.unlockedClueIds||[];
   p.reasonThemes.concat(p.divineThemes,p.extraThemes).forEach(function(t){
     (t.powerTags||[]).forEach(normTag);(t.weaknessTags||[]).forEach(normTag);
-    t.powerTags=t.powerTags||[];t.weaknessTags=t.weaknessTags||[];});
+    t.powerTags=t.powerTags||[];t.weaknessTags=t.weaknessTags||[];
+    /* 焦点 0-3（成长，满 3 换提升后重置）/ 裂痕·淡出 0-3（恶化，满 3 替换主题） */
+    t.focus=Math.max(0,Math.min(3,parseInt(t.focus,10)||0));
+    t.cracks=Math.max(0,Math.min(3,parseInt(t.cracks,10)||0));});
   p.teamTags.forEach(normTag);p.storyTags.forEach(normTag);
   p.status.forEach(function(s){s.level=Math.max(1,Math.min(6,parseInt(s.level,10)||1));});
 });
